@@ -241,7 +241,7 @@
         
                 if(res.status === "success") {
                     allRecords = res.records;
-                    setFilterOptions(records);
+                    setFilterOptions(allRecords);
                     applyFilters();
                 } else {
                     alert("데이터 실패: " + res.message);
@@ -255,7 +255,7 @@
         }
 
         // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
-        function setFilterOptions() {
+        function setFilterOptions(records) {
             // 1. 데이터가 있는지 확인
             if (!records || records.length === 0) {
                 console.warn("데이터가 아직 로드되지 않았습니다.");
