@@ -170,70 +170,65 @@
         };
 
         // [추가] 인증 처리 함수 (adminDB 구글 시트 연동)
-        const AUTH_URL = "https://script.google.com/macros/s/AKfycbx825pEoExNnGAKtOQhOjE-5hMkuc4R5okzCsAGNzmyo0X6WlsALOIjSBlb10DvQ49R/exec"; // adminDB 연동 URL
-
+        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; // adminDB 연동 URL
+                
         // 기존 fetch 코드 다 지우고 아래 함수로 대체하세요
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
-            
-            // 핵심: ?t=Date.now()를 붙여서 항상 새로운 요청인 것처럼 속입니다.
+        
             const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
         
             try {
                 const response = await fetch(url, { 
                     method: 'GET',
-                    mode: 'cors' 
+                    mode: 'cors',
+                    cache: 'no-store'   // ✅ 추가 (핵심)
                 });
+        
                 const res = await response.json();
         
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
-                    userCenter = res.center; // 전역 변수에 저장
+                    userCenter = res.center;
                     document.getElementById('login-overlay').style.display = 'none';
-                    loadDashboardData(); // 데이터 불러오기
+                    loadDashboardData();
                 } else {
-                    alert("로그인 실패: 정보가 일치하지 않습니다.");
+                    alert("로그인 실패");
                 }
-            } catch (error) {
-                console.error("통신 오류:", error);
-                alert("서버 통신 중 문제가 발생했습니다.");
-            }
-        }
         
-        // 응답을 받아 처리하는 함수 (여기에 기존 성공 로직을 넣으세요)
-        function handleLogin(response) {
-            console.log("받은 응답:", response);
-            if (response.result.startsWith("SUCCESS:")) {
-                // 성공 처리 (기존 로직 그대로)
-                alert("로그인 성공!");
-            } else {
-                alert("로그인 실패");
+            } catch (error) {
+                console.error("로그인 통신 오류:", error); // ✅ 강화
+                alert("서버 통신 오류");
             }
         }
                 
-                // 과장님 기존 동기화 함수 체계 100% 유지
-                function loadDashboardData() {
-                    document.getElementById('loading-indicator').style.display = "block";
-                    
-                    fetch(DATA_WEB_APP_URL, { mode: 'cors' })
-                    .then(res => res.json())
-                    .then(res => {
-                        document.getElementById('loading-indicator').style.display = "none";
-                        if(res.status === "success") {
-                            allRecords = res.records; // ★ [추가] 원본 백업
-                            setFilterOptions();       // ★ [추가] 시트 데이터 기반 필터 목록 동적 생성
-                            applyFilters();           // ★ [추가] 처음엔 필터 없이 전체 데이터 렌더링
-                        } else {
-                            alert("데이터 수집 실패: " + res.message);
-                        }
-                    })
-                    .catch(err => {
-                        document.getElementById('loading-indicator').style.display = "none";
-                        console.error(err);
-                        alert("네트워크 통신 규격을 확인하세요.");
-                    });
+        // 과장님 기존 동기화 함수 체계 100% 유지
+        function loadDashboardData() {
+            document.getElementById('loading-indicator').style.display = "block";
+        
+            fetch(DATA_WEB_APP_URL, { 
+                mode: 'cors',
+                cache: 'no-store'   // ✅ 추가 (핵심)
+            })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('loading-indicator').style.display = "none";
+        
+                if(res.status === "success") {
+                    allRecords = res.records;
+                    setFilterOptions();
+                    applyFilters();
+                } else {
+                    alert("데이터 실패: " + res.message);
                 }
+            })
+            .catch(err => {
+                document.getElementById('loading-indicator').style.display = "none";
+                console.error("데이터 통신 오류:", err); // ✅ 강화
+                alert("네트워크 오류");
+            });
+        }
 
         // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
         function setFilterOptions() {
