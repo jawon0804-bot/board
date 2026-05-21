@@ -241,7 +241,7 @@
         
                 if(res.status === "success") {
                     allRecords = res.records;
-                    setFilterOptions(allRecords);
+                    setFilterOptions(Records);
                     applyFilters();
                 } else {
                     alert("데이터 실패: " + res.message);
