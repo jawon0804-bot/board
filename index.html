@@ -172,42 +172,27 @@
         // [추가] 인증 처리 함수 (adminDB 구글 시트 연동)
         const AUTH_URL = "https://script.google.com/macros/s/AKfycbx9aYZwoR4XstyOPrMI20HiuEkUYAL8NYEY65HklHImEbe3fXi1TAwNFSWXQBubTQiB/exec"; // adminDB 연동 URL
 
+        // 기존 fetch 코드 다 지우고 아래 함수로 대체하세요
         function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
+            const url = `${AUTH_URL}?name=${name}&phone=${phone}&callback=handleLogin`;
         
-            // 1. fetch 호출
-            fetch(`${AUTH_URL}?name=${name}&phone=${phone}`)
-            .then(res => {
-                // 응답 상태 확인
-                if (!res.ok) throw new Error('서버 응답 오류');
-                return res.text(); // ★ 핵심: text()로 받아야 합니다.
-            })
-            .then(text => {
-                console.log("서버 응답:", text); // 디버깅용 로그
+            // 강제로 script 태그를 만들어 구글 서버에 요청
+            const script = document.createElement('script');
+            script.src = url;
+            document.body.appendChild(script);
+        }
         
-                // 2. 텍스트 응답 분석
-                if (text.startsWith("SUCCESS:")) {
-                    const centerName = text.split(":")[1]; // ":" 뒤의 센터명을 추출
-                    
-                    // 인증 성공 처리
-                    userCenter = centerName;
-                    localStorage.setItem("userCenter", userCenter);
-                    
-                    // UI 업데이트
-                    document.getElementById('login-overlay').style.display = 'none';
-                    document.getElementById('header-title').innerText = 
-                        (userCenter === "MasterAdmin") ? "전체 센터 통합 모니터링 현황판" : `${userCenter} 시설물점검 실시간 모니터링 현황판`;
-                    
-                    loadDashboardData(); // 데이터 불러오기 함수 호출
-                } else {
-                    alert("로그인 실패: " + text); // FAIL 메시지 출력
-                }
-            })
-            .catch(err => {
-                console.error("통신 에러:", err);
-                alert("통신 중 에러 발생. 네트워크를 확인하세요.");
-            });
+        // 응답을 받아 처리하는 함수 (여기에 기존 성공 로직을 넣으세요)
+        function handleLogin(response) {
+            console.log("받은 응답:", response);
+            if (response.result.startsWith("SUCCESS:")) {
+                // 성공 처리 (기존 로직 그대로)
+                alert("로그인 성공!");
+            } else {
+                alert("로그인 실패");
+            }
         }
                 
                 // 과장님 기존 동기화 함수 체계 100% 유지
