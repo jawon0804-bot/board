@@ -256,9 +256,17 @@
 
         // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
         function setFilterOptions() {
-            s = [...new Set(allRecords.map(r => r.inspector))].filter(Boolean).sort();
-            let fids = [...new Set(allRecords.map(r => r.fid))].filter(Boolean).sort();
+            // 1. 데이터가 있는지 확인
+            if (!records || records.length === 0) {
+                console.warn("데이터가 아직 로드되지 않았습니다.");
+                return; 
+            }
             
+            // 2. 데이터에서 점검자(inspector)와 설비ID(fid) 추출 (중복제거, 빈값제거, 정렬)
+            let inspectors = [...new Set(records.map(r => r.inspector))].filter(Boolean).sort();
+            let fids = [...new Set(records.map(r => r.fid))].filter(Boolean).sort();
+            
+            // 3. 필터 선택창에 반영
             const insSelect = document.getElementById('filterInspector');
             const fidSelect = document.getElementById('filterFid');
             
