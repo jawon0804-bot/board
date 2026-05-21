@@ -302,17 +302,27 @@
             buildDashboard(filtered);
         }
 
-        function toggleFullScreen() {
+         function toggleFullScreen() {
             if (!document.fullscreenElement) {
-                // 전체화면으로 전환
                 document.documentElement.requestFullscreen().catch(err => {
-                    alert(`전체화면 오류: ${err.message}`);
+                    alert(`전체화면 모드를 지원하지 않는 브라우저입니다: ${err.message}`);
                 });
             } else {
-                // 전체화면 해제
-                document.exitFullscreen();
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
             }
         }
+        
+        // 전체화면 상태 변화 감지 (아이콘 자동 변경)
+        document.addEventListener("fullscreenchange", () => {
+            const fsBtn = document.querySelector('[onclick="toggleFullScreen()"]');
+            if (document.fullscreenElement) {
+                fsBtn.innerHTML = '<i class="fa-solid fa-compress"></i> 전체화면 종료';
+            } else {
+                fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> 전체화면';
+            }
+        });
 
         // 기존 대시보드 뷰 바인딩 함수 100% 유지 (매개변수로 걸러진 데이터 입력받음)
         function buildDashboard(records) {
