@@ -175,46 +175,63 @@
         function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
-
-            fetch(`${AUTH_URL}?name=${name}&phone=${phone}`)
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "success") {
-                    // [추가] 로그인 성공 시 센터명 저장 및 UI 전환
-                    userCenter = data.centerName; 
-                    localStorage.setItem("userCenter", userCenter);
-                    document.getElementById('login-overlay').style.display = 'none';
-                    // [수정] 헤더 센터명 변경
-                    document.getElementById('header-title').innerText = `${userCenter} 시설물점검 실시간 모니터링 현황판`;
-                    loadDashboardData();
-                } else {
-                    alert("등록되지 않은 사용자입니다.");
-                }
-            });
-        }
         
-        // 과장님 기존 동기화 함수 체계 100% 유지
-        function loadDashboardData() {
-            document.getElementById('loading-indicator').style.display = "block";
-            
-            fetch(DATA_WEB_APP_URL, { mode: 'cors' })
-            .then(res => res.json())
+            // 1. fetch 호출
+            fetch(`${AUTH_URL}?name=${name}&phone=${phone}`)
             .then(res => {
-                document.getElementById('loading-indicator').style.display = "none";
-                if(res.status === "success") {
-                    allRecords = res.records; // ★ [추가] 원본 백업
-                    setFilterOptions();       // ★ [추가] 시트 데이터 기반 필터 목록 동적 생성
-                    applyFilters();           // ★ [추가] 처음엔 필터 없이 전체 데이터 렌더링
+                // 응답 상태 확인
+                if (!res.ok) throw new Error('서버 응답 오류');
+                return res.text(); // ★ 핵심: text()로 받아야 합니다.
+            })
+            .then(text => {
+                console.log("서버 응답:", text); // 디버깅용 로그
+        
+                // 2. 텍스트 응답 분석
+                if (text.startsWith("SUCCESS:")) {
+                    const centerName = text.split(":")[1]; // ":" 뒤의 센터명을 추출
+                    
+                    // 인증 성공 처리
+                    userCenter = centerName;
+                    localStorage.setItem("userCenter", userCenter);
+                    
+                    // UI 업데이트
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('header-title').innerText = 
+                        (userCenter === "MasterAdmin") ? "전체 센터 통합 모니터링 현황판" : `${userCenter} 시설물점검 실시간 모니터링 현황판`;
+                    
+                    loadDashboardData(); // 데이터 불러오기 함수 호출
                 } else {
-                    alert("데이터 수집 실패: " + res.message);
+                    alert("로그인 실패: " + text); // FAIL 메시지 출력
                 }
             })
             .catch(err => {
-                document.getElementById('loading-indicator').style.display = "none";
-                console.error(err);
-                alert("네트워크 통신 규격을 확인하세요.");
+                console.error("통신 에러:", err);
+                alert("통신 중 에러 발생. 네트워크를 확인하세요.");
             });
         }
+                
+                // 과장님 기존 동기화 함수 체계 100% 유지
+                function loadDashboardData() {
+                    document.getElementById('loading-indicator').style.display = "block";
+                    
+                    fetch(DATA_WEB_APP_URL, { mode: 'cors' })
+                    .then(res => res.json())
+                    .then(res => {
+                        document.getElementById('loading-indicator').style.display = "none";
+                        if(res.status === "success") {
+                            allRecords = res.records; // ★ [추가] 원본 백업
+                            setFilterOptions();       // ★ [추가] 시트 데이터 기반 필터 목록 동적 생성
+                            applyFilters();           // ★ [추가] 처음엔 필터 없이 전체 데이터 렌더링
+                        } else {
+                            alert("데이터 수집 실패: " + res.message);
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('loading-indicator').style.display = "none";
+                        console.error(err);
+                        alert("네트워크 통신 규격을 확인하세요.");
+                    });
+                }
 
         // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
         function setFilterOptions() {
