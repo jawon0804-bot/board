@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>정보통신 시설물 점검 모니터링 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --border-color: #e2e8f0;
+            --accent-blue: #3b82f6;
+        }
+        body {
+            margin: 0; padding: 20px; font-family: 'Malgun Gothic', dotum, sans-serif; background: var(--bg-dark); color: var(--text-main);
+        }
+        
+        /* 헤더 바 레이아웃 구조 */
+        .header-bar {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color);
+        }
+        .header-left {
+            display: flex; align-items: center; gap: 15px;
+        }
+        
+        /* 로고 3D 입체 애니메이션 */
+        .company-logo {
+            height: 42px;
+            width: auto;
+            object-fit: contain;
+            transform-origin: left center;
+            animation: waveFlag 2.5s ease-in-out infinite alternate;
+            filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.15));
+        }
+        
+        @keyframes waveFlag {
+            0% { transform: rotateX(0deg) rotateY(0deg) skewY(0deg); }
+            33% { transform: rotateX(4deg) rotateY(12deg) skewY(1deg) scaleX(0.98); }
+            66% { transform: rotateX(-3deg) rotateY(-8deg) skewY(-1deg) scaleX(1.01); }
+            100% { transform: rotateX(5deg) rotateY(15deg) skewY(2deg) scaleX(0.97); }
+        }
+        
+        .header-bar h2 { margin: 0; font-size: 24px; color: #1e293b; }
+        .refresh-btn {
+            background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;
+        }
+        .refresh-btn:hover { background: #1d4ed8; }
+        
+        /* [과장님 맞춤] 기간/조건 설정 필터바 스타일 */
+        .filter-bar {
+            background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
+        .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
+
+        /* 2x2 격자 레이아웃 배치 구조 */
+        .dashboard-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+        .chart-card {
+            background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
+        }
+        .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        /* 피봇 테이블 커스텀 스타일 정의 */
+        .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
+        .pivot-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+        .pivot-table th { background: #edf2f7; color: #4a5568; padding: 10px; font-weight: bold; border: 1px solid var(--border-color); position: sticky; top: 0; }
+        .pivot-table td { padding: 10px; border: 1px solid var(--border-color); }
+        .pivot-table tr:nth-child(even) { background: #f8fafc; }
+        .loading-view { text-align: center; font-size: 18px; padding: 5px; color: var(--accent-blue); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="header-left">
+            <img src="19vLRD-TlHafyGWRUWxr7JOVgM72aP-MI" alt="Company Logo" class="company-logo" onerror="this.style.display='none';">
+            <h2>시설물 점검 실시간 모니터링 현황판</h2>
+        </div>
+        <button class="refresh-btn" onclick="loadDashboardData()"><i class="fa-solid fa-rotate"></i> 현황 동기화</button>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-group">
+            <i class="fa-regular fa-calendar-days"></i>
+            <input type="date" id="startDate" class="filter-input"> ~ <input type="date" id="endDate" class="filter-input">
+        </div>
+        <span>|</span>
+        <div class="filter-group">
+            <label for="filterInspector">작업자: </label>
+            <select id="filterInspector" class="filter-input">
+                <option value="all">전체 작업자</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filterFid">설비ID: </label>
+            <select id="filterFid" class="filter-input">
+                <option value="all">전체 설비(FID)</option>
+            </select>
+        </div>
+        <button class="refresh-btn" onclick="applyFilters()" style="padding: 7px 15px; font-size: 13px;"><i class="fa-solid fa-magnifying-glass"></i> 검색</button>
+    </div>
+
+    <div id="loading-indicator" class="loading-view" style="display:none;">
+        <i class="fa-solid fa-spinner fa-spin"></i> 구글 시트 원본 데이터 분석 및 가공 중...
+    </div>
+
+    <div class="dashboard-grid" id="dashboard-content">
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-chart-bar"></i> 설비ID 및 날짜별 점검자</h3>
+            <div class="chart-container">
+                <canvas id="stackedBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-align-left"></i> 설비ID 및 날짜별 Record Count</h3>
+            <div class="chart-container">
+                <canvas id="horizontalBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-table"></i> 통합점검기록 피봇 테이블</h3>
+            <div class="table-wrapper">
+                <table class="pivot-table">
+                    <thead>
+                        <tr id="pivot-header">
+                            <th>설비ID</th>
+                            <th>점검 총 건수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pivot-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-chart-pie"></i> 점검자별 설비ID 비율</h3>
+            <div class="chart-container" style="display: flex; justify-content: center;">
+                <canvas id="pieChart" style="max-width: 280px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
+        
+        let chartInstances = {};
+        let allRecords = []; // ★ [추가] 구글 시트 원본 전체 데이터를 박아둘 보관함
+
+        window.onload = function() {
+            loadDashboardData();
+        };
+
+        // 과장님 기존 동기화 함수 체계 100% 유지
+        function loadDashboardData() {
+            document.getElementById('loading-indicator').style.display = "block";
+            
+            fetch(DATA_WEB_APP_URL, { mode: 'cors' })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('loading-indicator').style.display = "none";
+                if(res.status === "success") {
+                    allRecords = res.records; // ★ [추가] 원본 백업
+                    setFilterOptions();       // ★ [추가] 시트 데이터 기반 필터 목록 동적 생성
+                    applyFilters();           // ★ [추가] 처음엔 필터 없이 전체 데이터 렌더링
+                } else {
+                    alert("데이터 수집 실패: " + res.message);
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading-indicator').style.display = "none";
+                console.error(err);
+                alert("네트워크 통신 규격을 확인하세요.");
+            });
+        }
+
+        // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
+        function setFilterOptions() {
+            let inspectors = [...new Set(allRecords.map(r => r.inspector))].filter(Boolean).sort();
+            let fids = [...new Set(allRecords.map(r => r.fid))].filter(Boolean).sort();
+            
+            const insSelect = document.getElementById('filterInspector');
+            const fidSelect = document.getElementById('filterFid');
+            
+            // 초기화 후 삽입
+            insSelect.innerHTML = '<option value="all">전체 작업자</option>';
+            fidSelect.innerHTML = '<option value="all">전체 설비(FID)</option>';
+            
+            inspectors.forEach(ins => insSelect.innerHTML += `<option value="${ins}">${ins}</option>`);
+            fids.forEach(fid => fidSelect.innerHTML += `<option value="${fid}">${fid}</option>`);
+        }
+
+        // ★ [추가] 달력 날짜와 선택한 조건에 맞게 필터링해서 화면을 다시 그리는 마스터 필터 함수
+        function applyFilters() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            const selectedInspector = document.getElementById('filterInspector').value;
+            const selectedFid = document.getElementById('filterFid').value;
+
+            // 조건 필터 가동
+            let filtered = allRecords.filter(r => {
+                // 구글 시트의 r.date 혹은 r["날짜"] 형식 맞춤 연산
+                let rDate = r.date || r["날짜"];
+                
+                const dateMatch = (!start || rDate >= start) && (!end || rDate <= end);
+                const inspectorMatch = (selectedInspector === "all" || r.inspector === selectedInspector);
+                const fidMatch = (selectedFid === "all" || r.fid === selectedFid);
+                
+                return dateMatch && inspectorMatch && fidMatch;
+            });
+
+            // 필터링 처리된 최종 데이터만 가지고 기존 차트 빌더 시스템 호출
+            buildDashboard(filtered);
+        }
+
+        // 기존 대시보드 뷰 바인딩 함수 100% 유지 (매개변수로 걸러진 데이터 입력받음)
+        function buildDashboard(records) {
+            Object.keys(chartInstances).forEach(key => {
+                if(chartInstances[key]) chartInstances[key].destroy();
+            });
+
+            let fids = [...new Set(records.map(r => r.fid))].sort();
+            let inspectors = [...new Set(records.map(r => r.inspector))];
+            
+            // 1. 누적 차트
+            let inspectorCountsByFid = {};
+            fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
+            
+            chartInstances.stackedBarChart = new Chart(document.getElementById('stackedBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: fids,
+                    datasets: [{
+                        label: '점검 누적 카운트',
+                        data: fids.map(fid => inspectorCountsByFid[fid]),
+                        backgroundColor: ['#f59e0b', '#6366f1', '#06b6d4', '#10b981', '#ec4899', '#3b82f6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+            });
+
+            // 2. 가로 막대 차트
+            chartInstances.horizontalBarChart = new Chart(document.getElementById('horizontalBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: fids,
+                    datasets: [{
+                        label: '설비별 Record Count',
+                        data: fids.map(fid => records.filter(r => r.fid === fid).length),
+                        backgroundColor: '#3b82f6',
+                        barThickness: 18
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } }
+            });
+
+            // 3. 피봇 테이블
+            const pivotBody = document.getElementById('pivot-body');
+            let tableHtml = "";
+            fids.forEach(fid => {
+                let totalCount = records.filter(r => r.fid === fid).length;
+                tableHtml += `<tr>
+                    <td style="font-weight:bold; color:#1e293b;">${fid}</td>
+                    <td>${totalCount} 건</td>
+                </tr>`;
+            });
+            pivotBody.innerHTML = tableHtml;
+
+            // 4. 원형 차트
+            let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
+            chartInstances.pieChart = new Chart(document.getElementById('pieChart'), {
+                type: 'pie',
+                data: {
+                    labels: inspectors,
+                    datasets: [{
+                        data: inspectorData,
+                        backgroundColor: ['#3b82f6', '#f97316', '#a855f7', '#84cc16', '#06b6d4', '#eab308']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    </script>
+</body>
+</html>
