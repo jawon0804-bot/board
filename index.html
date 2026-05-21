@@ -90,7 +90,7 @@
     <div class="header-bar">
         <div class="header-left">
             <img src="assets/logo.jpg" alt="Company Logo" class="company-logo" onerror="this.style.display='none';">
-            <h2>시설물 점검 실시간 모니터링 현황판</h2>
+            <h2 id="dashboard-title">시설물 점검 실시간 모니터링 현황판</h2>
         </div>
         <button class="refresh-btn" onclick="loadDashboardData()"><i class="fa-solid fa-rotate"></i> 현황 동기화</button>
     </div>
@@ -191,6 +191,7 @@
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
                     userCenter = res.center;
+                    document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
                     document.getElementById('login-overlay').style.display = 'none';
                     loadDashboardData();
                 } else {
@@ -261,6 +262,7 @@
                 const dateMatch = (!start || rDate >= start) && (!end || rDate <= end);
                 const inspectorMatch = (selectedInspector === "all" || r.inspector === selectedInspector);
                 const fidMatch = (selectedFid === "all" || r.fid === selectedFid);
+                const centerMatch = (userCenter === "MasterAdmin" || r.center === userCenter);
                 
                 return dateMatch && inspectorMatch && fidMatch;
             });
