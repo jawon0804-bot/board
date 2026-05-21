@@ -170,19 +170,22 @@
         };
 
         // [추가] 인증 처리 함수 (adminDB 구글 시트 연동)
-        const AUTH_URL = "https://script.google.com/macros/s/AKfycbx9aYZwoR4XstyOPrMI20HiuEkUYAL8NYEY65HklHImEbe3fXi1TAwNFSWXQBubTQiB/exec"; // adminDB 연동 URL
+        const AUTH_URL = "https://script.google.com/macros/s/AKfycbx825pEoExNnGAKtOQhOjE-5hMkuc4R5okzCsAGNzmyo0X6WlsALOIjSBlb10DvQ49R/exec"; // adminDB 연동 URL
 
         // 기존 fetch 코드 다 지우고 아래 함수로 대체하세요
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
             
-            // URL에 파라미터 안전하게 인코딩
-            const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
+            // 핵심: ?t=Date.now()를 붙여서 항상 새로운 요청인 것처럼 속입니다.
+            const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
         
             try {
-                const response = await fetch(url, { mode: 'cors' });
-                const res = await response.json(); // JSON 응답 받기
+                const response = await fetch(url, { 
+                    method: 'GET',
+                    mode: 'cors' 
+                });
+                const res = await response.json();
         
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
