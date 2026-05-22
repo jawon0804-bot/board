@@ -27,26 +27,26 @@
             margin-bottom: 20px; 
             padding-bottom: 10px; 
             border-bottom: 2px solid var(--border-color);
-            flex-wrap: nowrap; /* 줄 바꿈 방지 */
+            flex-wrap: nowrap;
         }
         .header-left {
             display: flex; 
             align-items: center; 
             gap: 15px;
-            flex-shrink: 0; /* 제목 영역이 찌그러지지 않게 설정 */
+            flex-shrink: 0;
         }
         .header-right {
             display: flex; 
             gap: 10px; 
-            white-space: nowrap; /* 버튼들이 한 줄로 유지되게 */
+            white-space: nowrap;
         }
         
-        /* 💡 [수정] 로고 전체가 깃발처럼 입체적으로 자연스럽게 펄럭이도록 고정축 및 효과 변경 */
+        /* 로고 전체가 깃발처럼 입체적으로 자연스럽게 펄럭이도록 설정 */
         .company-logo {
             height: 52px;
             width: auto;
             object-fit: contain;
-            transform-origin: center center; /* 중심축을 정중앙으로 이동 */
+            transform-origin: center center;
             animation: waveFlag 3s ease-in-out infinite alternate;
             filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.15));
         }
@@ -69,14 +69,14 @@
         }
         .refresh-btn:hover { background: #1d4ed8; }
         
-        /* 기간/조건 설정 필터바 스타일 */
+        /* 필터바 스타일 */
         .filter-bar {
             background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
 
-        /* 2x2 격자 레이아웃 배치 구조 */
+        /* 격자 레이아웃 */
         .dashboard-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
         }
@@ -85,12 +85,12 @@
         }
         .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; }
         
-        /* 박스 자체 크기는 고정하고 넘치는 부분만 스크롤바 생성 */
+        /* 스크롤 박스 영역 고정 크기 정의 */
         .scrollable-chart-box-x { position: relative; height: 300px; width: 100%; overflow-x: auto; overflow-y: hidden; }
         .scrollable-chart-box-y { position: relative; height: 300px; width: 100%; overflow-y: auto; overflow-x: hidden; }
         .chart-inner-canvas { position: absolute; left: 0; top: 0; }
         
-        /* 피봇 테이블 커스텀 스타일 정의 */
+        /* 피봇 테이블 스타일 */
         .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
         .pivot-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
         .pivot-table th { background: #edf2f7; color: #4a5568; padding: 10px; font-weight: bold; border: 1px solid var(--border-color); position: sticky; top: 0; }
@@ -101,12 +101,20 @@
 </head>
 <body>
 
-    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; justify-content:center; align-items:center;">
-        <div style="width:300px; text-align:center;">
-            <h3>현장 점검 접속 인증</h3>
-            <input type="text" id="loginName" placeholder="이름" style="width:100%; padding:10px; margin-bottom:10px;"><br>
-            <input type="text" id="loginPhone" placeholder="전화번호" style="width:100%; padding:10px; margin-bottom:10px;"><br>
-            <button onclick="authenticate()" style="width:100%; padding:10px; background:#3b82f6; color:white; border:none; cursor:pointer;">확인</button>
+    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:9999; display:flex; justify-content:center; align-items:center;">
+        <div style="width:320px; background:#ffffff; padding: 30px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); text-align:center; box-sizing: border-box;">
+            
+            <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center;">
+                <img src="assets/logo.jpg" alt="Company Logo" style="height: 48px; width: auto; object-fit: contain; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.08));" onerror="this.style.display='none';">
+            </div>
+            
+            <h3 style="margin: 0 0 20px 0; font-size: 19px; color: #1e293b; font-weight: bold;">현장 점검 접속 인증</h3>
+            
+            <input type="text" id="loginName" placeholder="이름" style="width:100%; height:42px; padding:0 12px; margin-bottom:12px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;">
+            <br>
+            <input type="text" id="loginPhone" placeholder="전화번호" style="width:100%; height:42px; padding:0 12px; margin-bottom:20px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;">
+            <br>
+            <button onclick="authenticate()" style="width:100%; height:42px; background:#3b82f6; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; box-sizing:border-box; transition: 0.2s;">확인</button>
         </div>
     </div>
 
@@ -205,18 +213,11 @@
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
-        
             const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
         
             try {
-                const response = await fetch(url, { 
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-store'
-                });
-        
+                const response = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
                 const res = await response.json();
-        
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
                     userCenter = res.center;
@@ -226,7 +227,6 @@
                 } else {
                     alert("로그인 실패");
                 }
-        
             } catch (error) {
                 console.error("로그인 통신 오류:", error); 
                 alert("서버 통신 오류");
@@ -237,30 +237,21 @@
 
         function loadDashboardData() {
             document.getElementById('loading-indicator').style.display = "block";
-        
-            fetch(DATA_WEB_APP_URL, { 
-                mode: 'cors',
-                cache: 'no-store'
-            })
+            fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
             .then(res => res.json())
             .then(res => {
                 document.getElementById('loading-indicator').style.display = "none";
-        
                 if(res.status === "success") {
                     allRecords = res.records;
                     setFilterOptions(allRecords);
                     applyFilters();
-                    
-                    if(res.lastUpdate) {
-                        lastKnownTime = res.lastUpdate;
-                    }
+                    if(res.lastUpdate) { lastKnownTime = res.lastUpdate; }
                 } else {
                     alert("데이터 실패: " + res.message);
                 }
             })
             .catch(err => {
                 document.getElementById('loading-indicator').style.display = "none";
-                console.error("데이터 통신 오류:", err); 
                 alert("네트워크 오류");
             });
         }
@@ -269,12 +260,8 @@
           try {
             const res = await fetch(DATA_WEB_APP_URL, { cache: 'no-store' }); 
             const json = await res.json();
-            
             if (json.lastUpdate !== lastKnownTime) {
-              console.log("시트 변경 감지! 도장이 바뀌었으니 데이터를 새로 가져옵니다.");
               loadDashboardData(); 
-            } else {
-              console.log("시트 변동 없음. 대기 중...");
             }
           } catch (err) {
             console.error("자동 동기화 체크 중 오류:", err);
@@ -284,17 +271,12 @@
         setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
-            if (!records || records.length === 0) {
-                console.warn("데이터가 아직 로드되지 않았습니다.");
-                return; 
-            }
-            
+            if (!records || records.length === 0) return;
             let inspectors = [...new Set(records.map(r => r.inspector))].filter(Boolean).sort();
             let fids = [...new Set(records.map(r => r.fid))].filter(Boolean).sort();
             
             const insSelect = document.getElementById('filterInspector');
             const fidSelect = document.getElementById('filterFid');
-            
             insSelect.innerHTML = '<option value="all">전체 작업자</option>';
             fidSelect.innerHTML = '<option value="all">전체 설비(FID)</option>';
             
@@ -310,11 +292,9 @@
 
             let filtered = allRecords.filter(r => {
                 let rDate = r.date || r["날짜"];
-                
                 const dateMatch = (!start || rDate >= start) && (!end || rDate <= end);
                 const inspectorMatch = (selectedInspector === "all" || r.inspector === selectedInspector);
                 const fidMatch = (selectedFid === "all" || r.fid === selectedFid);
-                
                 return dateMatch && inspectorMatch && fidMatch;
             });
 
@@ -324,12 +304,10 @@
          function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    alert(`전체화면 모드를 지원하지 않는 브라우저입니다: ${err.message}`);
+                    alert(`전체화면 지원 안 함: ${err.message}`);
                 });
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
         
@@ -343,7 +321,7 @@
         });
 
         // =========================================================================
-        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 액션 부활 버전)
+        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★창 모드 강제 동기화 액션 포함)
         // =========================================================================
         function buildDashboard(records) {
             // 1. 기존 차트 인스턴스 파괴
@@ -354,113 +332,101 @@
                 }
             });
 
-            // 💡 [이것만 추가] 일반 창에서도 애니메이션이 무조건 터지도록 캔버스 재생성
+            // 2. 창 모드에서도 막대가 슥 차오르는 액션을 위해 도화지 비우기
             const boxStacked = document.getElementById('box-stacked');
             const boxHorizontal = document.getElementById('box-horizontal');
-            
-            boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
-            boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
+            boxStacked.innerHTML = '';
+            boxHorizontal.innerHTML = '';
 
-            // (이 뒤에 있는 1, 2, 3, 4번 기존 로직은 건드릴 필요 없이 그대로 두시면 됩니다!)
+            // 3. 브라우저가 비워진 것을 확실히 체감하도록 10ms 지연 처리 후 빌드
+            setTimeout(() => {
+                boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
+                boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
 
-            // -------------------------------------------------------------------------
-            // 1. 세로 막대형 스크롤 조절 및 애니메이션 추가
-            // -------------------------------------------------------------------------
-            const stackedCanvas = document.getElementById('stackedBarChart');
-            
-            if (fidCount > 10) {
-                let dynamicWidth = fidCount * 55;
-                stackedCanvas.style.width = dynamicWidth + "px";
-                stackedCanvas.style.height = "280px"; 
-            } else {
-                stackedCanvas.style.width = "100%";
-                stackedCanvas.style.height = "100%";
-            }
+                let fids = [...new Set(records.map(r => r.fid))].sort();
+                let inspectors = [...new Set(records.map(r => r.inspector))];
+                const fidCount = fids.length;
 
-            let inspectorCountsByFid = {};
-            fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
-            
-            chartInstances.stackedBarChart = new Chart(stackedCanvas, {
-                type: 'bar',
-                data: {
-                    labels: fids,
-                    datasets: [{
-                        label: '점검 누적 카운트',
-                        data: fids.map(fid => inspectorCountsByFid[fid]),
-                        backgroundColor: ['#f59e0b', '#6366f1', '#06b6d4', '#10b981', '#ec4899', '#3b82f6'],
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    // 💡 [추가] 차트가 그려질 때 1초(1000ms) 동안 아래에서 위로 스무스하게 올라오는 애니메이션 강제 지정
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
+                // [1번 차트 생성]
+                const stackedCanvas = document.getElementById('stackedBarChart');
+                if (fidCount > 10) {
+                    let dynamicWidth = fidCount * 55; 
+                    stackedCanvas.style.width = dynamicWidth + "px";
+                    stackedCanvas.style.height = "280px"; 
+                } else {
+                    stackedCanvas.style.width = "100%";
+                    stackedCanvas.style.height = "100%";
                 }
-            });
 
-            // -------------------------------------------------------------------------
-            // 2. 가로 막대형 스크롤 조절 및 애니메이션 추가
-            // -------------------------------------------------------------------------
-            const horizontalCanvas = document.getElementById('horizontalBarChart');
-            
-            if (fidCount > 10) {
-                let dynamicHeight = fidCount * 30;
-                horizontalCanvas.style.height = dynamicHeight + "px";
-                horizontalCanvas.style.width = "100%";
-            } else {
-                horizontalCanvas.style.height = "100%";
-                horizontalCanvas.style.width = "100%";
-            }
-
-            chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
-                type: 'bar',
-                data: {
-                    labels: fids,
-                    datasets: [{
-                        label: '설비별 Record Count',
-                        data: fids.map(fid => records.filter(r => r.fid === fid).length),
-                        backgroundColor: '#3b82f6',
-                        barThickness: 18
-                    }]
-                },
-                options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    // 💡 [추가] 가로 막대도 왼쪽에서 오른쪽으로 슥 밀려 나오는 액션 적용
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
+                let inspectorCountsByFid = {};
+                fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
+                
+                chartInstances.stackedBarChart = new Chart(stackedCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: fids,
+                        datasets: [{
+                            label: '점검 누적 카운트',
+                            data: fids.map(fid => inspectorCountsByFid[fid]),
+                            backgroundColor: ['#f59e0b', '#6366f1', '#06b6d4', '#10b981', '#ec4899', '#3b82f6'],
+                            borderWidth: 1
+                        }]
                     },
-                    scales: { x: { beginAtZero: true } } 
-                }
-            });
+                    options: { 
+                        responsive: true, maintainAspectRatio: false,
+                        animation: { duration: 1000, easing: 'easeOutQuart' },
+                        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
+                    }
+                });
 
-            // -------------------------------------------------------------------------
-            // 3. 피봇 테이블
-            // ------------------------------------------------------------------------
+                // [2번 차트 생성]
+                const horizontalCanvas = document.getElementById('horizontalBarChart');
+                if (fidCount > 10) {
+                    let dynamicHeight = fidCount * 30; 
+                    horizontalCanvas.style.height = dynamicHeight + "px";
+                    horizontalCanvas.style.width = "100%";
+                } else {
+                    horizontalCanvas.style.height = "100%";
+                    horizontalCanvas.style.width = "100%";
+                }
+
+                chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: fids,
+                        datasets: [{
+                            label: '설비별 Record Count',
+                            data: fids.map(fid => records.filter(r => r.fid === fid).length),
+                            backgroundColor: '#3b82f6',
+                            barThickness: 18
+                        }]
+                    },
+                    options: { 
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        animation: { duration: 1000, easing: 'easeOutQuart' },
+                        scales: { x: { beginAtZero: true } } 
+                    }
+                });
+            }, 10);
+
+            // [3번 피봇 테이블 데이터 채우기]
+            let fids = [...new Set(records.map(r => r.fid))].sort();
+            let inspectors = [...new Set(records.map(r => r.inspector))];
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
             fids.forEach(fid => {
                 let totalCount = records.filter(r => r.fid === fid).length;
-                tableHtml += `<tr>
-                    <td style="font-weight:bold; color:#1e293b;">${fid}</td>
-                    <td>${totalCount} 건</td>
-                </tr>`;
+                tableHtml += `<tr><td style="font-weight:bold; color:#1e293b;">${fid}</td><td>${totalCount} 건</td></tr>`;
             });
             pivotBody.innerHTML = tableHtml;
 
-            // -------------------------------------------------------------------------
-            // 4. 원형 차트 (💡 마우스를 대지 않아도 이름과 %가 조각 위에 상시 고정 표시됨)
-            // -------------------------------------------------------------------------
+            // [4번 원형 차트 생성]
             let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
             let total = inspectorData.reduce((a, b) => a + b, 0); 
             
+            const pieContainer = document.getElementById('pieChart').parentElement;
+            pieContainer.innerHTML = '<canvas id="pieChart" style="max-width: 280px; height: 300px;"></canvas>';
+
             chartInstances.pieChart = new Chart(document.getElementById('pieChart'), {
                 type: 'pie',
                 data: {
@@ -470,27 +436,20 @@
                         backgroundColor: ['#3b82f6', '#f97316', '#a855f7', '#84cc16', '#06b6d4', '#eab308']
                     }]
                 },
-                plugins: [ChartDataLabels], // 데이터 라벨 플러그인 주입
+                plugins: [ChartDataLabels],
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
                     plugins: {
                         datalabels: {
-                            color: '#ffffff', // 라벨 글자 색상
-                            font: {
-                                weight: 'bold',
-                                size: 12
-                            },
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 12 },
                             formatter: function(value, context) {
                                 let percentage = ((value / total) * 100).toFixed(1);
-                                if (percentage < 3) return ''; // 3% 미만 미미한 조각은 글자 숨겨서 겹침 방지
-                                
-                                // 차트 위에 [이름: 00%] 형태로 줄바꿈 표시
+                                if (percentage < 3) return ''; 
                                 return context.chart.data.labels[context.dataIndex] + '\n' + percentage + '%';
                             },
-                            align: 'center',
-                            anchor: 'center',
-                            textAlign: 'center'
+                            align: 'center', anchor: 'center', textAlign: 'center'
                         },
                         tooltip: {
                             callbacks: {
