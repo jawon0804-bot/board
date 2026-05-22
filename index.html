@@ -77,6 +77,7 @@
     </div>
 
     <script>
+    // ===================== URL =====================
     const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
     const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
     
@@ -85,19 +86,18 @@
     let userCenter = "";
     let lastKnownTime = 0; 
     
-    // ===================== ⭐ 설비ID 이름 매핑 =====================
+    // ===================== 설비ID 이름 =====================
     const fidNameMap = {
         "전기_01": "전기실",
         "소방_03": "소화전 설비",
         "기계_02": "펌프실"
     };
     
-    // ⭐ 설비 표시 형식
     function formatFid(fid) {
         return fidNameMap[fid] ? `${fid} (${fidNameMap[fid]})` : fid;
     }
     
-    // ===================== ⭐ 색상 자동 =====================
+    // ===================== 색상 =====================
     function getColorPalette(count) {
         const baseColors = [
             '#3b82f6','#f97316','#10b981','#a855f7','#eab308',
@@ -105,8 +105,6 @@
         ];
         return Array.from({length: count}, (_, i) => baseColors[i % baseColors.length]);
     }
-    
-    window.onload = function() { };
     
     // ===================== 로그인 =====================
     async function authenticate() {
@@ -121,8 +119,13 @@
             if (res.status === "SUCCESS") {
                 alert("로그인 성공! (" + res.center + " 소속)");
                 userCenter = res.center;
-                document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
+    
+                document.getElementById('dashboard-title').innerText =
+                    `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
+    
                 document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block'; // ⭐ 핵심 수정
+    
                 loadDashboardData();
             } else {
                 alert("로그인 실패");
@@ -134,22 +137,22 @@
     
     // ===================== 데이터 로드 =====================
     function loadDashboardData() {
-        document.getElementById('loading-indicator').style.display = "block";
+        document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "block");
     
         fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
         .then(res => res.json())
         .then(res => {
-            document.getElementById('loading-indicator').style.display = "none";
+            document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "none");
     
             if(res.status === "success") {
-                allRecords = res.records;
+                allRecords = res.records || [];
                 setFilterOptions(allRecords);
                 applyFilters();
                 if(res.lastUpdate) lastKnownTime = res.lastUpdate;
             }
         })
         .catch(() => {
-            document.getElementById('loading-indicator').style.display = "none";
+            document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "none");
             alert("네트워크 오류");
         });
     }
@@ -161,7 +164,7 @@
             const json = await res.json();
     
             if (json.lastUpdate !== lastKnownTime) {
-                loadDashboardData();
+                loadDashboardData(); // ⭐ 여기서 애니메이션 다시 실행됨
             }
         } catch {}
     }
@@ -175,6 +178,8 @@
         const insSelect = document.getElementById('filterInspector');
         const fidSelect = document.getElementById('filterFid');
     
+        if (!insSelect || !fidSelect) return;
+    
         insSelect.innerHTML = '<option value="all">전체 작업자</option>';
         fidSelect.innerHTML = '<option value="all">전체 설비(FID)</option>';
     
@@ -185,115 +190,91 @@
     function applyFilters() {
         const start = document.getElementById('startDate').value;
         const end = document.getElementById('endDate').value;
-        const selectedInspector = document.getElementById('filterInspector').value;
-        const selectedFid = document.getElementById('filterFid').value;
     
         let filtered = allRecords.filter(r => {
             let rDate = r.date || r["날짜"];
             return (!start || rDate >= start)
-                && (!end || rDate <= end)
-                && (selectedInspector === "all" || r.inspector === selectedInspector)
-                && (selectedFid === "all" || r.fid === selectedFid);
+                && (!end || rDate <= end);
         });
     
         buildDashboard(filtered);
     }
     
-    // ===================== 전체화면 =====================
-    function toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }
-    
-    // ===================== ⭐ 핵심: 대시보드 =====================
+    // ===================== ⭐ 핵심 대시보드 =====================
     function buildDashboard(records) {
+    
+        if (!records) return;
     
         Object.values(chartInstances).forEach(c => c && c.destroy());
     
         let fids = [...new Set(records.map(r => r.fid))].sort();
         let inspectors = [...new Set(records.map(r => r.inspector))];
     
-        // ---------- 1번 ----------
-        const stackedCanvas = document.getElementById('stackedBarChart');
-        const stackedBox = document.getElementById('box-stacked');
-    
-        if (fids.length > 10) {
-            stackedCanvas.style.width = (fids.length * 60) + "px";
-            stackedBox.style.overflowX = "auto"; // ⭐ 좌우 스크롤
-        }
-    
         let realData = fids.map(fid => records.filter(r => r.fid === fid).length);
         let zeroData = fids.map(() => 0);
     
-        chartInstances.stackedBarChart = new Chart(stackedCanvas, {
-            type: 'bar',
-            data: {
-                labels: fids.map(formatFid), // ⭐ 이름 표시
-                datasets: [{
-                    data: zeroData
-                }]
-            }
-        });
+        // ---------- 1번 ----------
+        const stackedCanvas = document.getElementById('stackedBarChart');
+        if (stackedCanvas) {
+            chartInstances.stackedBarChart = new Chart(stackedCanvas, {
+                type: 'bar',
+                data: {
+                    labels: fids.map(formatFid),
+                    datasets: [{ data: zeroData }]
+                }
+            });
     
-        setTimeout(() => {
-            chartInstances.stackedBarChart.data.datasets[0].data = realData;
-            chartInstances.stackedBarChart.update();
-        }, 150);
+            setTimeout(() => {
+                chartInstances.stackedBarChart.data.datasets[0].data = realData;
+                chartInstances.stackedBarChart.update();
+            }, 200);
+        }
     
         // ---------- 2번 ----------
         const horizontalCanvas = document.getElementById('horizontalBarChart');
-        const horizontalBox = document.getElementById('box-horizontal');
+        if (horizontalCanvas) {
+            chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
+                type: 'bar',
+                data: {
+                    labels: fids.map(formatFid),
+                    datasets: [{
+                        data: zeroData,
+                        backgroundColor: getColorPalette(fids.length)
+                    }]
+                },
+                options: { indexAxis: 'y' }
+            });
     
-        if (fids.length > 10) {
-            horizontalCanvas.style.height = (fids.length * 35) + "px";
-            horizontalBox.style.overflowY = "auto"; // ⭐ 세로 스크롤
+            setTimeout(() => {
+                chartInstances.horizontalBarChart.data.datasets[0].data = realData;
+                chartInstances.horizontalBarChart.update();
+            }, 200);
         }
-    
-        let realData2 = realData;
-        let zeroData2 = fids.map(() => 0);
-    
-        chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
-            type: 'bar',
-            data: {
-                labels: fids.map(formatFid),
-                datasets: [{
-                    data: zeroData2,
-                    backgroundColor: getColorPalette(fids.length) // ⭐ 색상 다양화
-                }]
-            },
-            options: { indexAxis: 'y' }
-        });
-    
-        setTimeout(() => {
-            chartInstances.horizontalBarChart.data.datasets[0].data = realData2;
-            chartInstances.horizontalBarChart.update();
-        }, 150);
     
         // ---------- 3번 ----------
         const pivotBody = document.getElementById('pivot-body');
-        pivotBody.innerHTML = fids.map(fid => `
-            <tr>
-                <td>${formatFid(fid)}</td>
-                <td>${records.filter(r => r.fid === fid).length} 건</td>
-            </tr>
-        `).join("");
+        if (pivotBody) {
+            pivotBody.innerHTML = fids.map(fid => `
+                <tr>
+                    <td>${formatFid(fid)}</td>
+                    <td>${records.filter(r => r.fid === fid).length} 건</td>
+                </tr>
+            `).join("");
+        }
     
         // ---------- 4번 ----------
         const pieCanvas = document.getElementById('pieChart');
-        let data = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
+        if (pieCanvas) {
+            let data = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
     
-        chartInstances.pieChart = new Chart(pieCanvas, {
-            type: 'pie',
-            data: {
-                labels: inspectors,
-                datasets: [{
-                    data: data
-                }]
-            }
-        });
+            chartInstances.pieChart = new Chart(pieCanvas, {
+                type: 'pie',
+                data: {
+                    labels: inspectors,
+                    datasets: [{ data }]
+                }
+            });
+        }
     }
     </script>
 </body>
