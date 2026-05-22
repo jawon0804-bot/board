@@ -226,14 +226,18 @@
                 alert("서버 통신 오류");
             }
         }
-                
-        // 과장님 기존 동기화 함수 체계 100% 유지
+            
+        let lastKnownTime = 0; // 이전에 확인한 도장 시간 저장용 변수
+
+        // =========================================================================
+        // 1. [실제 데이터 로드 & 화면 갱신] 함수
+        // =========================================================================
         function loadDashboardData() {
             document.getElementById('loading-indicator').style.display = "block";
         
             fetch(DATA_WEB_APP_URL, { 
                 mode: 'cors',
-                cache: 'no-store'   // ✅ 추가 (핵심)
+                cache: 'no-store'   // ✅ 캐시 방지 (핵심)
             })
             .then(res => res.json())
             .then(res => {
@@ -243,38 +247,50 @@
                     allRecords = res.records;
                     setFilterOptions(allRecords);
                     applyFilters();
+                    
+                    // [추정 수정] 혹시 웹 앱이 처음 켜졌을 때나 수동으로 가져왔을 때도 
+                    // 최신 도장 시간을 동기화해 주기 위해 추가합니다.
+                    if(res.lastUpdate) {
+                        lastKnownTime = res.lastUpdate;
+                    }
                 } else {
                     alert("데이터 실패: " + res.message);
                 }
             })
             .catch(err => {
                 document.getElementById('loading-indicator').style.display = "none";
-                console.error("데이터 통신 오류:", err); // ✅ 강화
+                console.error("데이터 통신 오류:", err); 
                 alert("네트워크 오류");
             });
         }
-
-        let lastKnownTime = 0; // 이전에 확인한 도장 시간
-
+        
+        // =========================================================================
+        // 2. [1분 주기 도장 검사 및 자동 호출] 함수
+        // =========================================================================
         async function syncDashboard() {
-          const res = await fetch("YOUR_WEB_APP_URL"); // 구글 시트 웹 앱 주소
-          const json = await res.json();
-          
-          // 도장 시간 확인
-          if (json.lastUpdate !== lastKnownTime) {
-            lastKnownTime = json.lastUpdate; // 새로운 도장 시간으로 갱신
-            console.log("도장이 바뀌었으니 데이터를 새로 그립니다!");
+          try {
+            // [수정] DATA_WEB_APP_URL 변수를 그대로 사용하여 주소를 하나로 일치시켰습니다.
+            const res = await fetch(DATA_WEB_APP_URL, { cache: 'no-store' }); 
+            const json = await res.json();
             
-            // 여기서 표(Table)나 그래프를 새로 그리는 함수 실행
-            updateUI(json.rows); 
-          } else {
-            console.log("아직 업데이트 안 됨. 대기 중...");
+            // 도장 시간 확인
+            if (json.lastUpdate !== lastKnownTime) {
+              console.log("시트 변경 감지! 도장이 바뀌었으니 데이터를 새로 가져옵니다.");
+              
+              // [수정] 도장이 바뀌었으므로, 위에서 만들어 둔 진짜 로드 함수를 여기서 강제로 실행합니다!
+              loadDashboardData(); 
+              
+            } else {
+              console.log("시트 변동 없음. 대기 중...");
+            }
+          } catch (err) {
+            console.error("자동 동기화 체크 중 오류:", err);
           }
         }
         
-        // 1분마다 확인
+        // 1분(60000ms)마다 시트 AD2 도장을 감시합니다.
         setInterval(syncDashboard, 60000);
-
+        
         // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
         function setFilterOptions(records) {
             // 1. 데이터가 있는지 확인
