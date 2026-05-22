@@ -323,25 +323,38 @@
         // =========================================================================
         // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 타이밍 완벽 교정판)
         // =========================================================================
-        function buildDashboard(records) {
-            // 1. 기존 차트가 있다면 데이터를 0으로 밀어버리고 파괴 (애니메이션 리셋을 위한 조치)
-            Object.keys(chartInstances).forEach(key => {
-                if(chartInstances[key]) {
-                    if (chartInstances[key].data && chartInstances[key].data.datasets) {
-                        chartInstances[key].data.datasets.forEach(dataset => {
-                            dataset.data = dataset.data.map(() => 0); // 데이터를 전부 0으로 리셋
-                        });
-                        chartInstances[key].update('none'); // 화면 갱신 없이 데이터 구조만 0으로 바꿈
-                    }
-                    chartInstances[key].destroy();
-                    chartInstances[key] = null;
+        function loadDashboardData() {
+            // 💡 [핵심] 로딩이 시작되면 대시보드 차트 영역을 잠시 숨겨버립니다 (애니메이션 리셋 유도)
+            document.getElementById('dashboard-content').style.opacity = "0";
+            document.getElementById('loading-indicator').style.display = "block";
+            
+            fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('loading-indicator').style.display = "none";
+                if(res.status === "success") {
+                    allRecords = res.records;
+                    setFilterOptions(allRecords);
+                    applyFilters();
+                    if(res.lastUpdate) { lastKnownTime = res.lastUpdate; }
+                    
+                    // 💡 데이터가 다 그려진 후, 숨겼던 대시보드를 부드럽게 짠! 하고 보여줍니다.
+                    // 이 순간 브라우저가 차트를 새로 인지하여 일반 창에서도 무조건 슥- 차오릅니다.
+                    setTimeout(() => {
+                        document.getElementById('dashboard-content').style.opacity = "1";
+                        document.getElementById('dashboard-content').style.transition = "opacity 0.2s";
+                    }, 50);
+                } else {
+                    alert("데이터 실패: " + res.message);
+                    document.getElementById('dashboard-content').style.opacity = "1";
                 }
+            })
+            .catch(err => {
+                document.getElementById('loading-indicator').style.display = "none";
+                document.getElementById('dashboard-content').style.opacity = "1";
+                alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             });
-
-            // 고유한 설비ID와 점검자 배열 추출
-            let fids = [...new Set(records.map(r => r.fid))].sort();
-            let inspectors = [...new Set(records.map(r => r.inspector))];
-            const fidCount = fids.length;
+        }
 
             // -------------------------------------------------------------------------
             // 1. 세로 막대형 차트 (stackedBarChart)
