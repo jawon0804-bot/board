@@ -346,18 +346,22 @@
         // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 액션 부활 버전)
         // =========================================================================
         function buildDashboard(records) {
-            // 💡 [수정] 동기화 시 무조건 막대가 다시 생겨나는 액션을 위해 기존 차트를 완전히 파괴하고 캔버스를 초기화
+            // 1. 기존 차트 인스턴스 파괴
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) {
                     chartInstances[key].destroy();
-                    chartInstances[key] = null; // 인스턴스 확실히 비우기
+                    chartInstances[key] = null;
                 }
             });
 
-            let fids = [...new Set(records.map(r => r.fid))].sort();
-            let inspectors = [...new Set(records.map(r => r.inspector))];
+            // 💡 [이것만 추가] 일반 창에서도 애니메이션이 무조건 터지도록 캔버스 재생성
+            const boxStacked = document.getElementById('box-stacked');
+            const boxHorizontal = document.getElementById('box-horizontal');
             
-            const fidCount = fids.length;
+            boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
+            boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
+
+            // (이 뒤에 있는 1, 2, 3, 4번 기존 로직은 건드릴 필요 없이 그대로 두시면 됩니다!)
 
             // -------------------------------------------------------------------------
             // 1. 세로 막대형 스크롤 조절 및 애니메이션 추가
