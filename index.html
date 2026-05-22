@@ -324,27 +324,31 @@
         // 데이터 가동 및 유동적 스크롤 차트 빌더 (★창 모드 강제 동기화 액션 포함)
         // =========================================================================
         function buildDashboard(records) {
-            // 1. 기존 차트 인스턴스 파괴
+            // 1. 기존 차트 인스턴스 확실하게 파괴 및 메모리 삭제
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) {
                     chartInstances[key].destroy();
-                    chartInstances[key] = null;
+                    delete chartInstances[key]; // 객체 속성 자체를 삭제
                 }
             });
 
-            // 2. 창 모드에서도 막대가 슥 차오르는 액션을 위해 도화지 비우기
+            // 2. 캔버스 영역 완전히 멸균 상태로 비우기
             const boxStacked = document.getElementById('box-stacked');
             const boxHorizontal = document.getElementById('box-horizontal');
             boxStacked.innerHTML = '';
             boxHorizontal.innerHTML = '';
 
-            // 3. 브라우저가 비워진 것을 확실히 체감하도록 10ms 지연 처리 후 빌드
+            // 💡 [치트키] 깊은 복사(Deep Copy)를 통해 records 데이터의 메모리 주소를 완전히 새로 생성합니다.
+            // 이렇게 하면 Chart.js 내부 엔진이 "이전과 완전히 다른 새 데이터셋이 유입되었다"고 판단하여 강제로 애니메이션을 구동합니다.
+            const freshRecords = JSON.parse(JSON.stringify(records));
+
             setTimeout(() => {
                 boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
                 boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
 
-                let fids = [...new Set(records.map(r => r.fid))].sort();
-                let inspectors = [...new Set(records.map(r => r.inspector))];
+                // 💡 새롭게 복사된 freshRecords를 기반으로 라벨과 데이터를 추출합니다.
+                let fids = [...new Set(freshRecords.map(r => r.fid))].sort();
+                let inspectors = [...new Set(freshRecords.map(r => r.inspector))];
                 const fidCount = fids.length;
 
                 // [1번 차트 생성]
@@ -359,7 +363,7 @@
                 }
 
                 let inspectorCountsByFid = {};
-                fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
+                fids.forEach(fid => { inspectorCountsByFid[fid] = freshRecords.filter(r => r.fid === fid).length; });
                 
                 chartInstances.stackedBarChart = new Chart(stackedCanvas, {
                     type: 'bar',
@@ -374,7 +378,11 @@
                     },
                     options: { 
                         responsive: true, maintainAspectRatio: false,
-                        animation: { duration: 1000, easing: 'easeOutQuart' },
+                        // 💡 애니메이션 구동 방식을 한 번 더 확실하게 선언
+                        animation: { 
+                            duration: 800, 
+                            easing: 'easeOutQuart' 
+                        },
                         scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
                     }
                 });
@@ -396,18 +404,21 @@
                         labels: fids,
                         datasets: [{
                             label: '설비별 Record Count',
-                            data: fids.map(fid => records.filter(r => r.fid === fid).length),
+                            data: fids.map(fid => freshRecords.filter(r => r.fid === fid).length),
                             backgroundColor: '#3b82f6',
                             barThickness: 18
                         }]
                     },
                     options: { 
                         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        animation: { duration: 1000, easing: 'easeOutQuart' },
+                        animation: { 
+                            duration: 800, 
+                            easing: 'easeOutQuart' 
+                        },
                         scales: { x: { beginAtZero: true } } 
                     }
                 });
-            }, 10);
+            }, 30); // 브라우저가 확실히 인지하도록 지연 시간을 30ms로 미세하게 상향
 
             // [3번 피봇 테이블 데이터 채우기]
             let fids = [...new Set(records.map(r => r.fid))].sort();
