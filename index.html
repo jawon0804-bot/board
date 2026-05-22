@@ -343,26 +343,29 @@
         });
 
         // =========================================================================
-        // 데이터 가동 및 유동적 스크롤 차트 빌더
+        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 액션 부활 버전)
         // =========================================================================
         function buildDashboard(records) {
+            // 💡 [수정] 동기화 시 무조건 막대가 다시 생겨나는 액션을 위해 기존 차트를 완전히 파괴하고 캔버스를 초기화
             Object.keys(chartInstances).forEach(key => {
-                if(chartInstances[key]) chartInstances[key].destroy();
+                if(chartInstances[key]) {
+                    chartInstances[key].destroy();
+                    chartInstances[key] = null; // 인스턴스 확실히 비우기
+                }
             });
 
             let fids = [...new Set(records.map(r => r.fid))].sort();
             let inspectors = [...new Set(records.map(r => r.inspector))];
             
-            // 설비(FID) 총 개수 파악
             const fidCount = fids.length;
 
             // -------------------------------------------------------------------------
-            // 1. 세로 막대형 스크롤 조절 (💡 설비 10개 초과 시 가로 스크롤 생성)
+            // 1. 세로 막대형 스크롤 조절 및 애니메이션 추가
             // -------------------------------------------------------------------------
             const stackedCanvas = document.getElementById('stackedBarChart');
             
             if (fidCount > 10) {
-                let dynamicWidth = fidCount * 55; // 설비당 55픽셀 확보하여 쾌적하게 배치
+                let dynamicWidth = fidCount * 55;
                 stackedCanvas.style.width = dynamicWidth + "px";
                 stackedCanvas.style.height = "280px"; 
             } else {
@@ -384,16 +387,25 @@
                         borderWidth: 1
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    // 💡 [추가] 차트가 그려질 때 1초(1000ms) 동안 아래에서 위로 스무스하게 올라오는 애니메이션 강제 지정
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
+                }
             });
 
             // -------------------------------------------------------------------------
-            // 2. 가로 막대형 스크롤 조절 (💡 설비 10개 초과 시 세로 스크롤 생성)
+            // 2. 가로 막대형 스크롤 조절 및 애니메이션 추가
             // -------------------------------------------------------------------------
             const horizontalCanvas = document.getElementById('horizontalBarChart');
             
             if (fidCount > 10) {
-                let dynamicHeight = fidCount * 30; // 항목당 30픽셀 두께 보장
+                let dynamicHeight = fidCount * 30;
                 horizontalCanvas.style.height = dynamicHeight + "px";
                 horizontalCanvas.style.width = "100%";
             } else {
@@ -412,10 +424,22 @@
                         barThickness: 18
                     }]
                 },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } } }
+                options: { 
+                    indexAxis: 'y', 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    // 💡 [추가] 가로 막대도 왼쪽에서 오른쪽으로 슥 밀려 나오는 액션 적용
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: { x: { beginAtZero: true } } 
+                }
             });
 
+            // -------------------------------------------------------------------------
             // 3. 피봇 테이블
+            // ------------------------------------------------------------------------
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
             fids.forEach(fid => {
