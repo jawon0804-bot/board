@@ -1,281 +1,215 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>시설물 점검 모니터링 대시보드</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-dark: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-main: #333333;
-            --border-color: #e2e8f0;
-            --accent-blue: #3b82f6;
-        }
-        body { margin: 0; padding: 20px; font-family: 'Malgun Gothic', dotum, sans-serif; background: var(--bg-dark); color: var(--text-main); }
-        
-        /* 스크롤바 디자인 */
-        .scrollable-chart-box-x, .scrollable-chart-box-y, .table-wrapper {
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 #f1f5f9;
-        }
-        .scrollable-chart-box-x::-webkit-scrollbar, .scrollable-chart-box-y::-webkit-scrollbar, .table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
-        .scrollable-chart-box-x::-webkit-scrollbar-thumb, .scrollable-chart-box-y::-webkit-scrollbar-thumb, .table-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>시설물 점검 모니터링 대시보드</title>
 
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
-        .company-logo { height: 52px; width: auto; object-fit: contain; }
-        .refresh-btn { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        .filter-bar { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color); }
-        .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; }
-        .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .chart-card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        
-        .scrollable-chart-box-x { height: 300px; overflow-x: auto; overflow-y: hidden; position: relative; }
-        .scrollable-chart-box-y { height: 300px; overflow-y: auto; overflow-x: hidden; position: relative; }
-        .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
-        .pivot-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
-        .pivot-table th { background: #edf2f7; padding: 10px; border: 1px solid var(--border-color); position: sticky; top: 0; }
-        .pivot-table td { padding: 10px; border: 1px solid var(--border-color); }
-    </style>
+<style>
+body { margin:0; padding:20px; font-family:Arial; background:#f4f6f9; }
+.header-bar { display:flex; justify-content:space-between; margin-bottom:10px; }
+button { padding:8px 12px; cursor:pointer; }
+.dashboard-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.chart-card { background:#fff; padding:10px; border-radius:10px; }
+</style>
 </head>
+
 <body>
 
-    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:9999; display:flex; justify-content:center; align-items:center;">
-        <div style="width:320px; background:#ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align:center;">
-            <h3>현장 점검 접속 인증</h3>
-            <input type="text" id="loginName" placeholder="이름" style="width:100%; height:40px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; padding:5px;">
-            <input type="text" id="loginPhone" placeholder="전화번호" style="width:100%; height:40px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; padding:5px;">
-            <button onclick="authenticate()" style="width:100%; height:40px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">확인</button>
-        </div>
-    </div>
+<div id="login-overlay">
+  <input id="loginName" placeholder="이름">
+  <input id="loginPhone" placeholder="전화번호">
+  <button onclick="authenticate()">로그인</button>
+</div>
 
-    <div id="dashboard-content" style="display:none;">
-        <div class="header-bar">
-            <div class="header-left">
-                <h2 id="dashboard-title">시설물 점검 실시간 모니터링 현황판</h2>
-            </div>
-            <button class="refresh-btn" onclick="loadDashboardData()"><i class="fa-solid fa-rotate"></i> 동기화</button>
-        </div>
+<div id="dashboard-content">
 
-        <div class="filter-bar">
-            <div class="filter-group"><input type="date" id="startDate" class="filter-input"> ~ <input type="date" id="endDate" class="filter-input"></div>
-            <button class="refresh-btn" onclick="applyFilters()">검색</button>
-        </div>
+<div class="header-bar">
+  <h2 id="dashboard-title">대시보드</h2>
 
-        <div class="dashboard-grid">
-            <div class="chart-card"><h3>설비ID별 점검 누적</h3><div class="scrollable-chart-box-x"><canvas id="stackedBarChart"></canvas></div></div>
-            <div class="chart-card"><h3>설비ID별 건수 (상세)</h3><div class="scrollable-chart-box-y"><canvas id="horizontalBarChart"></canvas></div></div>
-            <div class="chart-card"><h3>통합 점검 기록 테이블</h3><div class="table-wrapper"><table class="pivot-table"><thead><tr><th>설비명</th><th>총 건수</th></tr></thead><tbody id="pivot-body"></tbody></table></div></div>
-            <div class="chart-card"><h3>작업자 점검 비율</h3><canvas id="pieChart"></canvas></div>
-        </div>
-    </div>
+  <div>
+    <!-- ✅ 수정됨 -->
+    <button onclick="syncWithEffect()">동기화</button>
+    <button onclick="toggleFullScreen()">전체화면</button>
+  </div>
+</div>
 
-    <script>
-    // ===================== URL =====================
-    const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
-    const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
-    
-    let chartInstances = {};
-    let allRecords = []; 
-    let userCenter = "";
-    let lastKnownTime = 0; 
-    
-    // ===================== 설비ID 이름 =====================
-    const fidNameMap = {
-        "전기_01": "전기실",
-        "소방_03": "소화전 설비",
-        "기계_02": "펌프실"
-    };
-    
-    function formatFid(fid) {
-        return fidNameMap[fid] ? `${fid} (${fidNameMap[fid]})` : fid;
+<div id="loading-indicator" style="display:none;">로딩중...</div>
+
+<div class="dashboard-grid">
+  <div class="chart-card"><canvas id="stackedBarChart"></canvas></div>
+  <div class="chart-card"><canvas id="horizontalBarChart"></canvas></div>
+  <div class="chart-card"><canvas id="pieChart"></canvas></div>
+</div>
+
+</div>
+
+<script>
+const DATA_WEB_APP_URL = "여기에_URL";
+const AUTH_URL = "여기에_AUTH";
+
+let chartInstances = {};
+let allRecords = [];
+let lastKnownTime = 0;
+
+/* ================= 로그인 ================= */
+async function authenticate() {
+  const name = document.getElementById('loginName').value;
+  const phone = document.getElementById('loginPhone').value;
+
+  try {
+    const res = await fetch(`${AUTH_URL}?name=${name}&phone=${phone}`);
+    const json = await res.json();
+
+    if(json.status === "SUCCESS") {
+      document.getElementById('login-overlay').style.display="none";
+      loadDashboardData();
+    } else {
+      alert("로그인 실패");
     }
-    
-    // ===================== 색상 =====================
-    function getColorPalette(count) {
-        const baseColors = [
-            '#3b82f6','#f97316','#10b981','#a855f7','#eab308',
-            '#06b6d4','#ef4444','#22c55e','#8b5cf6','#f59e0b'
-        ];
-        return Array.from({length: count}, (_, i) => baseColors[i % baseColors.length]);
+  } catch(e){
+    alert("통신 오류");
+  }
+}
+
+/* ================= 데이터 로드 ================= */
+function loadDashboardData() {
+  document.getElementById('loading-indicator').style.display="block";
+
+  fetch(DATA_WEB_APP_URL, {cache:'no-store'})
+  .then(res=>res.json())
+  .then(res=>{
+    document.getElementById('loading-indicator').style.display="none";
+
+    console.log("📡 서버응답:", res);
+
+    // ✅ 핵심 수정
+    const records = res.records || res.data || res.result || [];
+
+    if(records.length === 0){
+      alert("데이터 없음");
+      return;
     }
-    
-    // ===================== 로그인 =====================
-    async function authenticate() {
-        const name = document.getElementById('loginName').value;
-        const phone = document.getElementById('loginPhone').value;
-        const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
-    
-        try {
-            const response = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
-            const res = await response.json();
-    
-            if (res.status === "SUCCESS") {
-                alert("로그인 성공! (" + res.center + " 소속)");
-                userCenter = res.center;
-    
-                document.getElementById('dashboard-title').innerText =
-                    `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
-    
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('dashboard-content').style.display = 'block'; // ⭐ 핵심 수정
-    
-                loadDashboardData();
-            } else {
-                alert("로그인 실패");
-            }
-        } catch (error) {
-            alert("서버 통신 오류");
+
+    allRecords = records;
+
+    // 전체 차트 제거
+    Object.keys(chartInstances).forEach(k=>{
+      if(chartInstances[k]){
+        chartInstances[k].destroy();
+        chartInstances[k]=null;
+      }
+    });
+
+    setTimeout(()=>{
+      buildDashboard(allRecords);
+    },200);
+
+    if(res.lastUpdate) lastKnownTime = res.lastUpdate;
+  })
+  .catch(err=>{
+    document.getElementById('loading-indicator').style.display="none";
+    console.error(err);
+    alert("통신 오류");
+  });
+}
+
+/* ================= 동기화 ================= */
+function syncWithEffect() {
+
+  // ✅ 1,2번만 초기화
+  if(chartInstances.stackedBarChart){
+    chartInstances.stackedBarChart.destroy();
+    chartInstances.stackedBarChart=null;
+  }
+  if(chartInstances.horizontalBarChart){
+    chartInstances.horizontalBarChart.destroy();
+    chartInstances.horizontalBarChart=null;
+  }
+
+  setTimeout(()=>{
+    loadDashboardData();
+  },200);
+}
+
+/* ================= 자동 동기화 ================= */
+setInterval(async ()=>{
+  try{
+    const res = await fetch(DATA_WEB_APP_URL);
+    const json = await res.json();
+
+    if(json.lastUpdate !== lastKnownTime){
+      syncWithEffect();
+    }
+  }catch(e){}
+},60000);
+
+/* ================= 그래프 ================= */
+function buildDashboard(records){
+
+  const fids = [...new Set(records.map(r=>r.fid))];
+
+  // 1번
+  chartInstances.stackedBarChart = new Chart(
+    document.getElementById('stackedBarChart'),
+    {
+      type:'bar',
+      data:{
+        labels:fids,
+        datasets:[{
+          data:fids.map(fid=>records.filter(r=>r.fid===fid).length)
+        }]
+      },
+      options:{animation:{duration:800}}
+    }
+  );
+
+  // 2번
+  chartInstances.horizontalBarChart = new Chart(
+    document.getElementById('horizontalBarChart'),
+    {
+      type:'bar',
+      data:{
+        labels:fids,
+        datasets:[{
+          data:fids.map(fid=>records.filter(r=>r.fid===fid).length)
+        }]
+      },
+      options:{indexAxis:'y'}
+    }
+  );
+
+  // 4번 (유지)
+  if(!chartInstances.pieChart){
+    const inspectors = [...new Set(records.map(r=>r.inspector))];
+
+    chartInstances.pieChart = new Chart(
+      document.getElementById('pieChart'),
+      {
+        type:'pie',
+        data:{
+          labels:inspectors,
+          datasets:[{
+            data:inspectors.map(i=>records.filter(r=>r.inspector===i).length)
+          }]
         }
-    }
-    
-    // ===================== 데이터 로드 =====================
-    function loadDashboardData() {
-        document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "block");
-    
-        fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
-        .then(res => res.json())
-        .then(res => {
-            document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "none");
-    
-            if(res.status === "success") {
-                allRecords = res.records || [];
-                setFilterOptions(allRecords);
-                applyFilters();
-                if(res.lastUpdate) lastKnownTime = res.lastUpdate;
-            }
-        })
-        .catch(() => {
-            document.getElementById('loading-indicator')?.style && (document.getElementById('loading-indicator').style.display = "none");
-            alert("네트워크 오류");
-        });
-    }
-    
-    // ===================== 자동 동기화 =====================
-    async function syncDashboard() {
-        try {
-            const res = await fetch(DATA_WEB_APP_URL, { cache: 'no-store' }); 
-            const json = await res.json();
-    
-            if (json.lastUpdate !== lastKnownTime) {
-                loadDashboardData(); // ⭐ 여기서 애니메이션 다시 실행됨
-            }
-        } catch {}
-    }
-    setInterval(syncDashboard, 60000);
-    
-    // ===================== 필터 =====================
-    function setFilterOptions(records) {
-        let inspectors = [...new Set(records.map(r => r.inspector))].filter(Boolean).sort();
-        let fids = [...new Set(records.map(r => r.fid))].filter(Boolean).sort();
-    
-        const insSelect = document.getElementById('filterInspector');
-        const fidSelect = document.getElementById('filterFid');
-    
-        if (!insSelect || !fidSelect) return;
-    
-        insSelect.innerHTML = '<option value="all">전체 작업자</option>';
-        fidSelect.innerHTML = '<option value="all">전체 설비(FID)</option>';
-    
-        inspectors.forEach(ins => insSelect.innerHTML += `<option value="${ins}">${ins}</option>`);
-        fids.forEach(fid => fidSelect.innerHTML += `<option value="${fid}">${fid}</option>`);
-    }
-    
-    function applyFilters() {
-        const start = document.getElementById('startDate').value;
-        const end = document.getElementById('endDate').value;
-    
-        let filtered = allRecords.filter(r => {
-            let rDate = r.date || r["날짜"];
-            return (!start || rDate >= start)
-                && (!end || rDate <= end);
-        });
-    
-        buildDashboard(filtered);
-    }
-    
-    // ===================== ⭐ 핵심 대시보드 =====================
-    function buildDashboard(records) {
-    
-        if (!records) return;
-    
-        Object.values(chartInstances).forEach(c => c && c.destroy());
-    
-        let fids = [...new Set(records.map(r => r.fid))].sort();
-        let inspectors = [...new Set(records.map(r => r.inspector))];
-    
-        let realData = fids.map(fid => records.filter(r => r.fid === fid).length);
-        let zeroData = fids.map(() => 0);
-    
-        // ---------- 1번 ----------
-        const stackedCanvas = document.getElementById('stackedBarChart');
-        if (stackedCanvas) {
-            chartInstances.stackedBarChart = new Chart(stackedCanvas, {
-                type: 'bar',
-                data: {
-                    labels: fids.map(formatFid),
-                    datasets: [{ data: zeroData }]
-                }
-            });
-    
-            setTimeout(() => {
-                chartInstances.stackedBarChart.data.datasets[0].data = realData;
-                chartInstances.stackedBarChart.update();
-            }, 200);
-        }
-    
-        // ---------- 2번 ----------
-        const horizontalCanvas = document.getElementById('horizontalBarChart');
-        if (horizontalCanvas) {
-            chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
-                type: 'bar',
-                data: {
-                    labels: fids.map(formatFid),
-                    datasets: [{
-                        data: zeroData,
-                        backgroundColor: getColorPalette(fids.length)
-                    }]
-                },
-                options: { indexAxis: 'y' }
-            });
-    
-            setTimeout(() => {
-                chartInstances.horizontalBarChart.data.datasets[0].data = realData;
-                chartInstances.horizontalBarChart.update();
-            }, 200);
-        }
-    
-        // ---------- 3번 ----------
-        const pivotBody = document.getElementById('pivot-body');
-        if (pivotBody) {
-            pivotBody.innerHTML = fids.map(fid => `
-                <tr>
-                    <td>${formatFid(fid)}</td>
-                    <td>${records.filter(r => r.fid === fid).length} 건</td>
-                </tr>
-            `).join("");
-        }
-    
-        // ---------- 4번 ----------
-        const pieCanvas = document.getElementById('pieChart');
-        if (pieCanvas) {
-            let data = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
-    
-            chartInstances.pieChart = new Chart(pieCanvas, {
-                type: 'pie',
-                data: {
-                    labels: inspectors,
-                    datasets: [{ data }]
-                }
-            });
-        }
-    }
-    </script>
+      }
+    );
+  }
+}
+
+/* ================= 전체화면 ================= */
+function toggleFullScreen(){
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen();
+  }else{
+    document.exitFullscreen();
+  }
+}
+</script>
+
 </body>
 </html>
