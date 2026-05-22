@@ -321,108 +321,106 @@
         });
 
         // =========================================================================
-        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★창 모드 강제 동기화 액션 포함)
+        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 타이밍 완벽 교정판)
         // =========================================================================
         function buildDashboard(records) {
-            // 1. 기존 차트 인스턴스 확실하게 파괴 및 메모리 삭제
+            // 1. 기존 차트 인스턴스 파괴
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) {
                     chartInstances[key].destroy();
-                    delete chartInstances[key]; // 객체 속성 자체를 삭제
+                    chartInstances[key] = null;
                 }
             });
 
-            // 2. 캔버스 영역 완전히 멸균 상태로 비우기
+            // 2. 캔버스 엘리먼트 초기화 (도화지 새로 깔기)
             const boxStacked = document.getElementById('box-stacked');
             const boxHorizontal = document.getElementById('box-horizontal');
-            boxStacked.innerHTML = '';
-            boxHorizontal.innerHTML = '';
+            
+            boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
+            boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
 
-            // 💡 [치트키] 깊은 복사(Deep Copy)를 통해 records 데이터의 메모리 주소를 완전히 새로 생성합니다.
-            // 이렇게 하면 Chart.js 내부 엔진이 "이전과 완전히 다른 새 데이터셋이 유입되었다"고 판단하여 강제로 애니메이션을 구동합니다.
-            const freshRecords = JSON.parse(JSON.stringify(records));
-
-            setTimeout(() => {
-                boxStacked.innerHTML = '<canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>';
-                boxHorizontal.innerHTML = '<canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>';
-
-                // 💡 새롭게 복사된 freshRecords를 기반으로 라벨과 데이터를 추출합니다.
-                let fids = [...new Set(freshRecords.map(r => r.fid))].sort();
-                let inspectors = [...new Set(freshRecords.map(r => r.inspector))];
-                const fidCount = fids.length;
-
-                // [1번 차트 생성]
-                const stackedCanvas = document.getElementById('stackedBarChart');
-                if (fidCount > 10) {
-                    let dynamicWidth = fidCount * 55; 
-                    stackedCanvas.style.width = dynamicWidth + "px";
-                    stackedCanvas.style.height = "280px"; 
-                } else {
-                    stackedCanvas.style.width = "100%";
-                    stackedCanvas.style.height = "100%";
-                }
-
-                let inspectorCountsByFid = {};
-                fids.forEach(fid => { inspectorCountsByFid[fid] = freshRecords.filter(r => r.fid === fid).length; });
-                
-                chartInstances.stackedBarChart = new Chart(stackedCanvas, {
-                    type: 'bar',
-                    data: {
-                        labels: fids,
-                        datasets: [{
-                            label: '점검 누적 카운트',
-                            data: fids.map(fid => inspectorCountsByFid[fid]),
-                            backgroundColor: ['#f59e0b', '#6366f1', '#06b6d4', '#10b981', '#ec4899', '#3b82f6'],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: { 
-                        responsive: true, maintainAspectRatio: false,
-                        // 💡 애니메이션 구동 방식을 한 번 더 확실하게 선언
-                        animation: { 
-                            duration: 800, 
-                            easing: 'easeOutQuart' 
-                        },
-                        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
-                    }
-                });
-
-                // [2번 차트 생성]
-                const horizontalCanvas = document.getElementById('horizontalBarChart');
-                if (fidCount > 10) {
-                    let dynamicHeight = fidCount * 30; 
-                    horizontalCanvas.style.height = dynamicHeight + "px";
-                    horizontalCanvas.style.width = "100%";
-                } else {
-                    horizontalCanvas.style.height = "100%";
-                    horizontalCanvas.style.width = "100%";
-                }
-
-                chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
-                    type: 'bar',
-                    data: {
-                        labels: fids,
-                        datasets: [{
-                            label: '설비별 Record Count',
-                            data: fids.map(fid => freshRecords.filter(r => r.fid === fid).length),
-                            backgroundColor: '#3b82f6',
-                            barThickness: 18
-                        }]
-                    },
-                    options: { 
-                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        animation: { 
-                            duration: 800, 
-                            easing: 'easeOutQuart' 
-                        },
-                        scales: { x: { beginAtZero: true } } 
-                    }
-                });
-            }, 30); // 브라우저가 확실히 인지하도록 지연 시간을 30ms로 미세하게 상향
-
-            // [3번 피봇 테이블 데이터 채우기]
             let fids = [...new Set(records.map(r => r.fid))].sort();
             let inspectors = [...new Set(records.map(r => r.inspector))];
+            const fidCount = fids.length;
+
+            // -------------------------------------------------------------------------
+            // 1. 세로 막대형 (★도화지 크기 세팅을 완전히 끝내놓고 차트 주입)
+            // -------------------------------------------------------------------------
+            const stackedCanvas = document.getElementById('stackedBarChart');
+            
+            if (fidCount > 10) {
+                let dynamicWidth = fidCount * 55; 
+                stackedCanvas.style.width = dynamicWidth + "px";
+                stackedCanvas.style.height = "280px"; 
+            } else {
+                stackedCanvas.style.width = "100%";
+                stackedCanvas.style.height = "100%";
+            }
+
+            let inspectorCountsByFid = {};
+            fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
+            
+            // 💡 크기 조절이 완전히 끝난 캔버스 위에 차트를 그리므로 애니메이션이 깨지지 않습니다.
+            chartInstances.stackedBarChart = new Chart(stackedCanvas, {
+                type: 'bar',
+                data: {
+                    labels: fids,
+                    datasets: [{
+                        label: '점검 누적 카운트',
+                        data: fids.map(fid => inspectorCountsByFid[fid]),
+                        backgroundColor: ['#f59e0b', '#6366f1', '#06b6d4', '#10b981', '#ec4899', '#3b82f6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
+                }
+            });
+
+            // -------------------------------------------------------------------------
+            // 2. 가로 막대형 (★여기도 마찬가지로 크기 확정 후 차트 생성)
+            // -------------------------------------------------------------------------
+            const horizontalCanvas = document.getElementById('horizontalBarChart');
+            
+            if (fidCount > 10) {
+                let dynamicHeight = fidCount * 30; 
+                horizontalCanvas.style.height = dynamicHeight + "px";
+                horizontalCanvas.style.width = "100%";
+            } else {
+                horizontalCanvas.style.height = "100%";
+                horizontalCanvas.style.width = "100%";
+            }
+
+            chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
+                type: 'bar',
+                data: {
+                    labels: fids,
+                    datasets: [{
+                        label: '설비별 Record Count',
+                        data: fids.map(fid => records.filter(r => r.fid === fid).length),
+                        backgroundColor: '#3b82f6',
+                        barThickness: 18
+                    }]
+                },
+                options: { 
+                    indexAxis: 'y', 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: { x: { beginAtZero: true } } 
+                }
+            });
+
+            // 3. 피봇 테이블 데이터 업데이트
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
             fids.forEach(fid => {
@@ -431,7 +429,7 @@
             });
             pivotBody.innerHTML = tableHtml;
 
-            // [4번 원형 차트 생성]
+            // 4. 원형 차트 (애니메이션 동기화 및 라벨 포함)
             let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
             let total = inspectorData.reduce((a, b) => a + b, 0); 
             
@@ -449,8 +447,12 @@
                 },
                 plugins: [ChartDataLabels],
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
                     plugins: {
                         datalabels: {
                             color: '#ffffff',
