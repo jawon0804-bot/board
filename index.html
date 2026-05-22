@@ -324,14 +324,21 @@
         // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 타이밍 완벽 교정판)
         // =========================================================================
         function buildDashboard(records) {
-            // 1. 기존 차트 인스턴스 파괴
+            // 1. 기존 차트가 있다면 데이터를 0으로 밀어버리고 파괴 (애니메이션 리셋을 위한 조치)
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) {
+                    if (chartInstances[key].data && chartInstances[key].data.datasets) {
+                        chartInstances[key].data.datasets.forEach(dataset => {
+                            dataset.data = dataset.data.map(() => 0); // 데이터를 전부 0으로 리셋
+                        });
+                        chartInstances[key].update('none'); // 화면 갱신 없이 데이터 구조만 0으로 바꿈
+                    }
                     chartInstances[key].destroy();
                     chartInstances[key] = null;
                 }
             });
 
+            // 고유한 설비ID와 점검자 배열 추출
             let fids = [...new Set(records.map(r => r.fid))].sort();
             let inspectors = [...new Set(records.map(r => r.inspector))];
             const fidCount = fids.length;
@@ -341,11 +348,6 @@
             // -------------------------------------------------------------------------
             const stackedCanvas = document.getElementById('stackedBarChart');
             
-            // 💡 [핵심] 기존에 박혀있던 가로/세로 스타일 크기를 완전히 지워서 초기화합니다.
-            stackedCanvas.removeAttribute('style'); 
-            stackedCanvas.className = 'chart-inner-canvas'; // 클래스만 재부여
-
-            // 크기 조절 로직 실행
             if (fidCount > 10) {
                 let dynamicWidth = fidCount * 55; 
                 stackedCanvas.style.width = dynamicWidth + "px";
@@ -373,21 +375,19 @@
                     responsive: true, 
                     maintainAspectRatio: false,
                     animation: {
-                        duration: 800,
+                        duration: 1000, // 1초 동안 슥 올라옴
                         easing: 'easeOutQuart'
                     },
                     scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
                 }
             });
 
+
             // -------------------------------------------------------------------------
             // 2. 가로 막대형 차트 (horizontalBarChart)
             // -------------------------------------------------------------------------
             const horizontalCanvas = document.getElementById('horizontalBarChart');
             
-            // 💡 [핵심] 가로 막대 도화지도 기존 스타일 크기를 시원하게 밀어버립니다.
-            horizontalCanvas.removeAttribute('style');
-
             if (fidCount > 10) {
                 let dynamicHeight = fidCount * 30; 
                 horizontalCanvas.style.height = dynamicHeight + "px";
@@ -413,16 +413,17 @@
                     responsive: true, 
                     maintainAspectRatio: false,
                     animation: {
-                        duration: 800,
+                        duration: 1000,
                         easing: 'easeOutQuart'
                     },
                     scales: { x: { beginAtZero: true } } 
                 }
             });
 
-            // (이 뒤의 3번 피봇 테이블과 4번 원형 차트 코드는 정상 작동하니 그대로 두시면 됩니다!)
 
+            // -------------------------------------------------------------------------
             // 3. 피봇 테이블 데이터 업데이트
+            // -------------------------------------------------------------------------
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
             fids.forEach(fid => {
@@ -431,14 +432,16 @@
             });
             pivotBody.innerHTML = tableHtml;
 
-            // 4. 원형 차트 (애니메이션 동기화 및 라벨 포함)
+
+            // -------------------------------------------------------------------------
+            // 4. 원형 차트 (pieChart)
+            // -------------------------------------------------------------------------
             let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
             let total = inspectorData.reduce((a, b) => a + b, 0); 
             
-            const pieContainer = document.getElementById('pieChart').parentElement;
-            pieContainer.innerHTML = '<canvas id="pieChart" style="max-width: 280px; height: 300px;"></canvas>';
+            const pieCanvas = document.getElementById('pieChart');
 
-            chartInstances.pieChart = new Chart(document.getElementById('pieChart'), {
+            chartInstances.pieChart = new Chart(pieCanvas, {
                 type: 'pie',
                 data: {
                     labels: inspectors,
@@ -452,7 +455,7 @@
                     responsive: true, 
                     maintainAspectRatio: false,
                     animation: {
-                        duration: 800,
+                        duration: 1000,
                         easing: 'easeOutQuart'
                     },
                     plugins: {
