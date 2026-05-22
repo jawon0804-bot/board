@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>시설물 점검 모니터링 대시보드</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -40,21 +41,26 @@
             white-space: nowrap; /* 버튼들이 한 줄로 유지되게 */
         }
         
-        /* 로고 3D 입체 애니메이션 */
+        /* 💡 [수정] 로고 전체가 깃발처럼 입체적으로 자연스럽게 펄럭이도록 고정축 및 효과 변경 */
         .company-logo {
             height: 52px;
             width: auto;
             object-fit: contain;
-            transform-origin: left center;
-            animation: waveFlag 2.5s ease-in-out infinite alternate;
-            filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.15));
+            transform-origin: center center; /* 중심축을 정중앙으로 이동 */
+            animation: waveFlag 3s ease-in-out infinite alternate;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.15));
         }
         
         @keyframes waveFlag {
-            0% { transform: rotateX(0deg) rotateY(0deg) skewY(0deg); }
-            33% { transform: rotateX(4deg) rotateY(12deg) skewY(1deg) scaleX(0.98); }
-            66% { transform: rotateX(-3deg) rotateY(-8deg) skewY(-1deg) scaleX(1.01); }
-            100% { transform: rotateX(5deg) rotateY(15deg) skewY(2deg) scaleX(0.97); }
+            0% { 
+                transform: translate(0, 0) rotateX(0deg) rotateY(-5deg) skewY(-1deg); 
+            }
+            5% {
+                transform: translate(1px, -1px) rotateX(2deg) rotateY(5deg) skewY(1deg);
+            }
+            100% { 
+                transform: translate(-1px, 2px) rotateX(-2deg) rotateY(10deg) skewY(1deg); 
+            }
         }
         
         .header-bar h2 { margin: 0; font-size: 24px; color: #1e293b; }
@@ -63,7 +69,7 @@
         }
         .refresh-btn:hover { background: #1d4ed8; }
         
-        /* [과장님 맞춤] 기간/조건 설정 필터바 스타일 */
+        /* 기간/조건 설정 필터바 스타일 */
         .filter-bar {
             background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
@@ -78,7 +84,11 @@
             background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
         }
         .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        /* 박스 자체 크기는 고정하고 넘치는 부분만 스크롤바 생성 */
+        .scrollable-chart-box-x { position: relative; height: 300px; width: 100%; overflow-x: auto; overflow-y: hidden; }
+        .scrollable-chart-box-y { position: relative; height: 300px; width: 100%; overflow-y: auto; overflow-x: hidden; }
+        .chart-inner-canvas { position: absolute; left: 0; top: 0; }
         
         /* 피봇 테이블 커스텀 스타일 정의 */
         .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
@@ -91,8 +101,7 @@
 </head>
 <body>
 
-    <!-- [추가] 로그인 모달/레이어 -->
-    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999;     display:flex; justify-content:center; align-items:center;">
+    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; justify-content:center; align-items:center;">
         <div style="width:300px; text-align:center;">
             <h3>현장 점검 접속 인증</h3>
             <input type="text" id="loginName" placeholder="이름" style="width:100%; padding:10px; margin-bottom:10px;"><br>
@@ -108,7 +117,6 @@
         </div>
         
         <div class="header-right">
-            
             <button class="refresh-btn" onclick="loadDashboardData()">
                 <i class="fa-solid fa-rotate"></i> 현황 동기화
             </button>
@@ -146,15 +154,15 @@
     <div class="dashboard-grid" id="dashboard-content">
         <div class="chart-card">
             <h3><i class="fa-solid fa-chart-bar"></i> 설비ID 및 날짜별 점검자</h3>
-            <div class="chart-container">
-                <canvas id="stackedBarChart"></canvas>
+            <div class="scrollable-chart-box-x" id="box-stacked">
+                <canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>
             </div>
         </div>
 
         <div class="chart-card">
             <h3><i class="fa-solid fa-align-left"></i> 설비ID 및 날짜별 Record Count</h3>
-            <div class="chart-container">
-                <canvas id="horizontalBarChart"></canvas>
+            <div class="scrollable-chart-box-y" id="box-horizontal">
+                <canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>
             </div>
         </div>
 
@@ -176,7 +184,7 @@
         <div class="chart-card">
             <h3><i class="fa-solid fa-chart-pie"></i> 점검자별 설비ID 비율</h3>
             <div class="chart-container" style="display: flex; justify-content: center;">
-                <canvas id="pieChart" style="max-width: 280px;"></canvas>
+                <canvas id="pieChart" style="max-width: 280px; height: 300px;"></canvas>
             </div>
         </div>
     </div>
@@ -185,17 +193,15 @@
         const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
         
         let chartInstances = {};
-        let allRecords = []; // ★ [추가] 구글 시트 원본 전체 데이터를 박아둘 보관함
+        let allRecords = []; 
         let userCenter = "";
         
         window.onload = function() {
             loadDashboardData();
         };
 
-        // [추가] 인증 처리 함수 (adminDB 구글 시트 연동)
-        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; // adminDB 연동 URL
+        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
                 
-        // 기존 fetch 코드 다 지우고 아래 함수로 대체하세요
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
@@ -206,7 +212,7 @@
                 const response = await fetch(url, { 
                     method: 'GET',
                     mode: 'cors',
-                    cache: 'no-store'   // ✅ 추가 (핵심)
+                    cache: 'no-store'
                 });
         
                 const res = await response.json();
@@ -222,22 +228,19 @@
                 }
         
             } catch (error) {
-                console.error("로그인 통신 오류:", error); // ✅ 강화
+                console.error("로그인 통신 오류:", error); 
                 alert("서버 통신 오류");
             }
         }
             
-        let lastKnownTime = 0; // 이전에 확인한 도장 시간 저장용 변수
+        let lastKnownTime = 0; 
 
-        // =========================================================================
-        // 1. [실제 데이터 로드 & 화면 갱신] 함수
-        // =========================================================================
         function loadDashboardData() {
             document.getElementById('loading-indicator').style.display = "block";
         
             fetch(DATA_WEB_APP_URL, { 
                 mode: 'cors',
-                cache: 'no-store'   // ✅ 캐시 방지 (핵심)
+                cache: 'no-store'
             })
             .then(res => res.json())
             .then(res => {
@@ -248,8 +251,6 @@
                     setFilterOptions(allRecords);
                     applyFilters();
                     
-                    // [추정 수정] 혹시 웹 앱이 처음 켜졌을 때나 수동으로 가져왔을 때도 
-                    // 최신 도장 시간을 동기화해 주기 위해 추가합니다.
                     if(res.lastUpdate) {
                         lastKnownTime = res.lastUpdate;
                     }
@@ -264,22 +265,14 @@
             });
         }
         
-        // =========================================================================
-        // 2. [1분 주기 도장 검사 및 자동 호출] 함수
-        // =========================================================================
         async function syncDashboard() {
           try {
-            // [수정] DATA_WEB_APP_URL 변수를 그대로 사용하여 주소를 하나로 일치시켰습니다.
             const res = await fetch(DATA_WEB_APP_URL, { cache: 'no-store' }); 
             const json = await res.json();
             
-            // 도장 시간 확인
             if (json.lastUpdate !== lastKnownTime) {
               console.log("시트 변경 감지! 도장이 바뀌었으니 데이터를 새로 가져옵니다.");
-              
-              // [수정] 도장이 바뀌었으므로, 위에서 만들어 둔 진짜 로드 함수를 여기서 강제로 실행합니다!
               loadDashboardData(); 
-              
             } else {
               console.log("시트 변동 없음. 대기 중...");
             }
@@ -288,26 +281,20 @@
           }
         }
         
-        // 1분(60000ms)마다 시트 AD2 도장을 감시합니다.
         setInterval(syncDashboard, 60000);
         
-        // ★ [추가] 구글 시트에 등록된 실시간 작업자 및 설비ID 목록을 필터 박스에 넣어주는 함수
         function setFilterOptions(records) {
-            // 1. 데이터가 있는지 확인
             if (!records || records.length === 0) {
                 console.warn("데이터가 아직 로드되지 않았습니다.");
                 return; 
             }
             
-            // 2. 데이터에서 점검자(inspector)와 설비ID(fid) 추출 (중복제거, 빈값제거, 정렬)
             let inspectors = [...new Set(records.map(r => r.inspector))].filter(Boolean).sort();
             let fids = [...new Set(records.map(r => r.fid))].filter(Boolean).sort();
             
-            // 3. 필터 선택창에 반영
             const insSelect = document.getElementById('filterInspector');
             const fidSelect = document.getElementById('filterFid');
             
-            // 초기화 후 삽입
             insSelect.innerHTML = '<option value="all">전체 작업자</option>';
             fidSelect.innerHTML = '<option value="all">전체 설비(FID)</option>';
             
@@ -315,27 +302,22 @@
             fids.forEach(fid => fidSelect.innerHTML += `<option value="${fid}">${fid}</option>`);
         }
 
-        // ★ [추가] 달력 날짜와 선택한 조건에 맞게 필터링해서 화면을 다시 그리는 마스터 필터 함수
         function applyFilters() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
             const selectedInspector = document.getElementById('filterInspector').value;
             const selectedFid = document.getElementById('filterFid').value;
 
-            // 조건 필터 가동
             let filtered = allRecords.filter(r => {
-                // 구글 시트의 r.date 혹은 r["날짜"] 형식 맞춤 연산
                 let rDate = r.date || r["날짜"];
                 
                 const dateMatch = (!start || rDate >= start) && (!end || rDate <= end);
                 const inspectorMatch = (selectedInspector === "all" || r.inspector === selectedInspector);
                 const fidMatch = (selectedFid === "all" || r.fid === selectedFid);
-                const centerMatch = (userCenter === "MasterAdmin" || r.center === userCenter);
                 
                 return dateMatch && inspectorMatch && fidMatch;
             });
 
-            // 필터링 처리된 최종 데이터만 가지고 기존 차트 빌더 시스템 호출
             buildDashboard(filtered);
         }
 
@@ -351,7 +333,6 @@
             }
         }
         
-        // 전체화면 상태 변화 감지 (아이콘 자동 변경)
         document.addEventListener("fullscreenchange", () => {
             const fsBtn = document.querySelector('[onclick="toggleFullScreen()"]');
             if (document.fullscreenElement) {
@@ -361,7 +342,9 @@
             }
         });
 
-        // 기존 대시보드 뷰 바인딩 함수 100% 유지 (매개변수로 걸러진 데이터 입력받음)
+        // =========================================================================
+        // 데이터 가동 및 유동적 스크롤 차트 빌더
+        // =========================================================================
         function buildDashboard(records) {
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) chartInstances[key].destroy();
@@ -370,11 +353,27 @@
             let fids = [...new Set(records.map(r => r.fid))].sort();
             let inspectors = [...new Set(records.map(r => r.inspector))];
             
-            // 1. 누적 차트
+            // 설비(FID) 총 개수 파악
+            const fidCount = fids.length;
+
+            // -------------------------------------------------------------------------
+            // 1. 세로 막대형 스크롤 조절 (💡 설비 10개 초과 시 가로 스크롤 생성)
+            // -------------------------------------------------------------------------
+            const stackedCanvas = document.getElementById('stackedBarChart');
+            
+            if (fidCount > 10) {
+                let dynamicWidth = fidCount * 55; // 설비당 55픽셀 확보하여 쾌적하게 배치
+                stackedCanvas.style.width = dynamicWidth + "px";
+                stackedCanvas.style.height = "280px"; 
+            } else {
+                stackedCanvas.style.width = "100%";
+                stackedCanvas.style.height = "100%";
+            }
+
             let inspectorCountsByFid = {};
             fids.forEach(fid => { inspectorCountsByFid[fid] = records.filter(r => r.fid === fid).length; });
             
-            chartInstances.stackedBarChart = new Chart(document.getElementById('stackedBarChart'), {
+            chartInstances.stackedBarChart = new Chart(stackedCanvas, {
                 type: 'bar',
                 data: {
                     labels: fids,
@@ -388,8 +387,21 @@
                 options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
             });
 
-            // 2. 가로 막대 차트
-            chartInstances.horizontalBarChart = new Chart(document.getElementById('horizontalBarChart'), {
+            // -------------------------------------------------------------------------
+            // 2. 가로 막대형 스크롤 조절 (💡 설비 10개 초과 시 세로 스크롤 생성)
+            // -------------------------------------------------------------------------
+            const horizontalCanvas = document.getElementById('horizontalBarChart');
+            
+            if (fidCount > 10) {
+                let dynamicHeight = fidCount * 30; // 항목당 30픽셀 두께 보장
+                horizontalCanvas.style.height = dynamicHeight + "px";
+                horizontalCanvas.style.width = "100%";
+            } else {
+                horizontalCanvas.style.height = "100%";
+                horizontalCanvas.style.width = "100%";
+            }
+
+            chartInstances.horizontalBarChart = new Chart(horizontalCanvas, {
                 type: 'bar',
                 data: {
                     labels: fids,
@@ -415,9 +427,11 @@
             });
             pivotBody.innerHTML = tableHtml;
 
-            // 4. 원형 차트 (백분율 표시 추가)
+            // -------------------------------------------------------------------------
+            // 4. 원형 차트 (💡 마우스를 대지 않아도 이름과 %가 조각 위에 상시 고정 표시됨)
+            // -------------------------------------------------------------------------
             let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
-            let total = inspectorData.reduce((a, b) => a + b, 0); // 전체 합계 계산
+            let total = inspectorData.reduce((a, b) => a + b, 0); 
             
             chartInstances.pieChart = new Chart(document.getElementById('pieChart'), {
                 type: 'pie',
@@ -428,15 +442,33 @@
                         backgroundColor: ['#3b82f6', '#f97316', '#a855f7', '#84cc16', '#06b6d4', '#eab308']
                     }]
                 },
+                plugins: [ChartDataLabels], // 데이터 라벨 플러그인 주입
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
+                        datalabels: {
+                            color: '#ffffff', // 라벨 글자 색상
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            formatter: function(value, context) {
+                                let percentage = ((value / total) * 100).toFixed(1);
+                                if (percentage < 3) return ''; // 3% 미만 미미한 조각은 글자 숨겨서 겹침 방지
+                                
+                                // 차트 위에 [이름: 00%] 형태로 줄바꿈 표시
+                                return context.chart.data.labels[context.dataIndex] + '\n' + percentage + '%';
+                            },
+                            align: 'center',
+                            anchor: 'center',
+                            textAlign: 'center'
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     let value = context.raw;
-                                    let percentage = ((value / total) * 100).toFixed(1); // 소수점 첫째 자리까지
+                                    let percentage = ((value / total) * 100).toFixed(1); 
                                     return `${context.label}: ${value}건 (${percentage}%)`;
                                 }
                             }
