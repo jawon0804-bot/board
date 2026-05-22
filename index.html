@@ -19,48 +19,22 @@
             margin: 0; padding: 20px; font-family: 'Malgun Gothic', dotum, sans-serif; background: var(--bg-dark); color: var(--text-main);
         }
         
-        /* 헤더 바 레이아웃 구조 */
         .header-bar {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            padding-bottom: 10px; 
-            border-bottom: 2px solid var(--border-color);
-            flex-wrap: nowrap;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); flex-wrap: nowrap;
         }
-        .header-left {
-            display: flex; 
-            align-items: center; 
-            gap: 15px;
-            flex-shrink: 0;
-        }
-        .header-right {
-            display: flex; 
-            gap: 10px; 
-            white-space: nowrap;
-        }
+        .header-left { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        .header-right { display: flex; gap: 10px; white-space: nowrap; }
         
-        /* 로고 전체가 깃발처럼 입체적으로 자연스럽게 펄럭이도록 설정 */
         .company-logo {
-            height: 52px;
-            width: auto;
-            object-fit: contain;
-            transform-origin: center center;
+            height: 52px; width: auto; object-fit: contain; transform-origin: center center;
             animation: waveFlag 3s ease-in-out infinite alternate;
             filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.15));
         }
         
         @keyframes waveFlag {
-            0% { 
-                transform: translate(0, 0) rotateX(0deg) rotateY(-5deg) skewY(-1deg); 
-            }
-            5% {
-                transform: translate(1px, -1px) rotateX(2deg) rotateY(5deg) skewY(1deg);
-            }
-            100% { 
-                transform: translate(-1px, 2px) rotateX(-2deg) rotateY(10deg) skewY(1deg); 
-            }
+            0% { transform: translate(0, 0) rotateX(0deg) rotateY(-5deg) skewY(-1deg); }
+            5% { transform: translate(1px, -1px) rotateX(2deg) rotateY(5deg) skewY(1deg); }
+            100% { transform: translate(-1px, 2px) rotateX(-2deg) rotateY(10deg) skewY(1deg); }
         }
         
         .header-bar h2 { margin: 0; font-size: 24px; color: #1e293b; }
@@ -69,28 +43,20 @@
         }
         .refresh-btn:hover { background: #1d4ed8; }
         
-        /* 필터바 스타일 */
         .filter-bar {
             background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
 
-        /* 격자 레이아웃 */
-        .dashboard-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
-        }
-        .chart-card {
-            background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
-        }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
         .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; }
         
-        /* 스크롤 박스 영역 고정 크기 정의 */
         .scrollable-chart-box-x { position: relative; height: 300px; width: 100%; overflow-x: auto; overflow-y: hidden; }
         .scrollable-chart-box-y { position: relative; height: 300px; width: 100%; overflow-y: auto; overflow-x: hidden; }
         .chart-inner-canvas { position: absolute; left: 0; top: 0; }
         
-        /* 피봇 테이블 스타일 */
         .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
         .pivot-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
         .pivot-table th { background: #edf2f7; color: #4a5568; padding: 10px; font-weight: bold; border: 1px solid var(--border-color); position: sticky; top: 0; }
@@ -103,113 +69,110 @@
 
     <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:9999; display:flex; justify-content:center; align-items:center;">
         <div style="width:320px; background:#ffffff; padding: 30px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); text-align:center; box-sizing: border-box;">
-            
             <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center;">
                 <img src="assets/logo.jpg" alt="Company Logo" style="height: 48px; width: auto; object-fit: contain; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.08));" onerror="this.style.display='none';">
             </div>
-            
             <h3 style="margin: 0 0 20px 0; font-size: 19px; color: #1e293b; font-weight: bold;">현장 점검 접속 인증</h3>
-            
             <input type="text" id="loginName" placeholder="이름" style="width:100%; height:42px; padding:0 12px; margin-bottom:12px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;">
             <br>
             <input type="text" id="loginPhone" placeholder="전화번호" style="width:100%; height:42px; padding:0 12px; margin-bottom:20px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;">
             <br>
-            <button onclick="authenticate()" style="width:100%; height:42px; background:#3b82f6; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; box-sizing:border-box; transition: 0.2s;">확인</button>
+            <button onclick="authenticate()" style="width:100%; height:42px; background:#3b82f6; color:white; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; box-sizing:border-box;">확인</button>
         </div>
     </div>
 
-    <div class="header-bar">
-        <div class="header-left">
-            <img src="assets/logo.jpg" alt="Company Logo" class="company-logo" onerror="this.style.display='none';">
-            <h2 id="dashboard-title">시설물 점검 실시간 모니터링 현황판</h2>
-        </div>
-        
-        <div class="header-right">
-            <button class="refresh-btn" onclick="loadDashboardData()">
-                <i class="fa-solid fa-rotate"></i> 현황 동기화
-            </button>
-            <button class="refresh-btn" onclick="toggleFullScreen()" style="background: #4b5563;">
-                <i class="fa-solid fa-expand"></i> 전체화면
-            </button>  
-        </div>
-    </div>
-
-    <div class="filter-bar">
-        <div class="filter-group">
-            <i class="fa-regular fa-calendar-days"></i>
-            <input type="date" id="startDate" class="filter-input"> ~ <input type="date" id="endDate" class="filter-input">
-        </div>
-        <span>|</span>
-        <div class="filter-group">
-            <label for="filterInspector">작업자: </label>
-            <select id="filterInspector" class="filter-input">
-                <option value="all">전체 작업자</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <label for="filterFid">설비ID: </label>
-            <select id="filterFid" class="filter-input">
-                <option value="all">전체 설비(FID)</option>
-            </select>
-        </div>
-        <button class="refresh-btn" onclick="applyFilters()" style="padding: 7px 15px; font-size: 13px;"><i class="fa-solid fa-magnifying-glass"></i> 검색</button>
-    </div>
-
-    <div id="loading-indicator" class="loading-view" style="display:none;">
-        <i class="fa-solid fa-spinner fa-spin"></i> 구글 시트 원본 데이터 분석 및 가공 중...
-    </div>
-
-    <div class="dashboard-grid" id="dashboard-content">
-        <div class="chart-card">
-            <h3><i class="fa-solid fa-chart-bar"></i> 설비ID 및 날짜별 점검자</h3>
-            <div class="scrollable-chart-box-x" id="box-stacked">
-                <canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>
+    <div id="dashboard-content">
+        <div class="header-bar">
+            <div class="header-left">
+                <img src="assets/logo.jpg" alt="Company Logo" class="company-logo" onerror="this.style.display='none';">
+                <h2 id="dashboard-title">시설물 점검 실시간 모니터링 현황판</h2>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" onclick="loadDashboardData()">
+                    <i class="fa-solid fa-rotate"></i> 현황 동기화
+                </button>
+                <button class="refresh-btn" onclick="toggleFullScreen()" style="background: #4b5563;">
+                    <i class="fa-solid fa-expand"></i> 전체화면
+                </button>  
             </div>
         </div>
 
-        <div class="chart-card">
-            <h3><i class="fa-solid fa-align-left"></i> 설비ID 및 날짜별 Record Count</h3>
-            <div class="scrollable-chart-box-y" id="box-horizontal">
-                <canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>
+        <div class="filter-bar">
+            <div class="filter-group">
+                <i class="fa-regular fa-calendar-days"></i>
+                <input type="date" id="startDate" class="filter-input"> ~ <input type="date" id="endDate" class="filter-input">
             </div>
+            <span>|</span>
+            <div class="filter-group">
+                <label for="filterInspector">작업자: </label>
+                <select id="filterInspector" class="filter-input">
+                    <option value="all">전체 작업자</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterFid">설비ID: </label>
+                <select id="filterFid" class="filter-input">
+                    <option value="all">전체 설비(FID)</option>
+                </select>
+            </div>
+            <button class="refresh-btn" onclick="applyFilters()" style="padding: 7px 15px; font-size: 13px;"><i class="fa-solid fa-magnifying-glass"></i> 검색</button>
         </div>
 
-        <div class="chart-card">
-            <h3><i class="fa-solid fa-table"></i> 통합점검기록 피봇 테이블</h3>
-            <div class="table-wrapper">
-                <table class="pivot-table">
-                    <thead>
-                        <tr id="pivot-header">
-                            <th>설비ID</th>
-                            <th>점검 총 건수</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pivot-body"></tbody>
-                </table>
-            </div>
+        <div id="loading-indicator" class="loading-view" style="display:none;">
+            <i class="fa-solid fa-spinner fa-spin"></i> 구글 시트 원본 데이터 분석 및 가공 중...
         </div>
 
-        <div class="chart-card">
-            <h3><i class="fa-solid fa-chart-pie"></i> 점검자별 설비ID 비율</h3>
-            <div class="chart-container" style="display: flex; justify-content: center;">
-                <canvas id="pieChart" style="max-width: 280px; height: 300px;"></canvas>
+        <div class="dashboard-grid">
+            <div class="chart-card">
+                <h3><i class="fa-solid fa-chart-bar"></i> 설비ID 및 날짜별 점검자</h3>
+                <div class="scrollable-chart-box-x" id="box-stacked">
+                    <canvas id="stackedBarChart" class="chart-inner-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fa-solid fa-align-left"></i> 설비ID 및 날짜별 Record Count</h3>
+                <div class="scrollable-chart-box-y" id="box-horizontal">
+                    <canvas id="horizontalBarChart" class="chart-inner-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fa-solid fa-table"></i> 통합점검기록 피봇 테이블</h3>
+                <div class="table-wrapper">
+                    <table class="pivot-table">
+                        <thead>
+                            <tr id="pivot-header">
+                                <th>설비ID</th>
+                                <th>점검 총 건수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pivot-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fa-solid fa-chart-pie"></i> 점검자별 설비ID 비율</h3>
+                <div class="chart-container" style="display: flex; justify-content: center;">
+                    <canvas id="pieChart" style="max-width: 280px; height: 300px;"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
+        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
         
         let chartInstances = {};
         let allRecords = []; 
         let userCenter = "";
+        let lastKnownTime = 0; 
         
-        window.onload = function() {
-            loadDashboardData();
-        };
+        // 인내심 테스트 방지용: 켜지자마자 데이터를 조용히 받지 않고 로그인 성공 시점에 띄웁니다.
+        window.onload = function() { };
 
-        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
-                
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
@@ -223,7 +186,7 @@
                     userCenter = res.center;
                     document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
                     document.getElementById('login-overlay').style.display = 'none';
-                    loadDashboardData();
+                    loadDashboardData(); // 대시보드 열리면서 즉시 데이터 바인딩 시작
                 } else {
                     alert("로그인 실패");
                 }
@@ -232,11 +195,12 @@
                 alert("서버 통신 오류");
             }
         }
-            
-        let lastKnownTime = 0; 
 
         function loadDashboardData() {
+            // 💡 [화면 리셋 연출] 화면을 잠깐 보이지 않게 감추고 로딩바 구동
+            document.getElementById('dashboard-content').style.opacity = "0";
             document.getElementById('loading-indicator').style.display = "block";
+            
             fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
             .then(res => res.json())
             .then(res => {
@@ -246,13 +210,22 @@
                     setFilterOptions(allRecords);
                     applyFilters();
                     if(res.lastUpdate) { lastKnownTime = res.lastUpdate; }
+                    
+                    // 💡 데이터 렌더링이 완전히 끝난 후 투명도를 1로 올려서 슥- 차오르게 함
+                    setTimeout(() => {
+                        document.getElementById('dashboard-content').style.opacity = "1";
+                        document.getElementById('dashboard-content').style.transition = "opacity 0.25s";
+                    }, 50);
                 } else {
                     alert("데이터 실패: " + res.message);
+                    document.getElementById('dashboard-content').style.opacity = "1";
                 }
             })
             .catch(err => {
                 document.getElementById('loading-indicator').style.display = "none";
-                alert("네트워크 오류");
+                document.getElementById('dashboard-content').style.opacity = "1";
+                console.error(err);
+                alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             });
         }
         
@@ -301,7 +274,7 @@
             buildDashboard(filtered);
         }
 
-         function toggleFullScreen() {
+        function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
                     alert(`전체화면 지원 안 함: ${err.message}`);
@@ -320,47 +293,20 @@
             }
         });
 
-        // =========================================================================
-        // 데이터 가동 및 유동적 스크롤 차트 빌더 (★애니메이션 타이밍 완벽 교정판)
-        // =========================================================================
-        function loadDashboardData() {
-            // 💡 [핵심] 로딩이 시작되면 대시보드 차트 영역을 잠시 숨겨버립니다 (애니메이션 리셋 유도)
-            document.getElementById('dashboard-content').style.opacity = "0";
-            document.getElementById('loading-indicator').style.display = "block";
-            
-            fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
-            .then(res => res.json())
-            .then(res => {
-                document.getElementById('loading-indicator').style.display = "none";
-                if(res.status === "success") {
-                    allRecords = res.records;
-                    setFilterOptions(allRecords);
-                    applyFilters();
-                    if(res.lastUpdate) { lastKnownTime = res.lastUpdate; }
-                    
-                    // 💡 데이터가 다 그려진 후, 숨겼던 대시보드를 부드럽게 짠! 하고 보여줍니다.
-                    // 이 순간 브라우저가 차트를 새로 인지하여 일반 창에서도 무조건 슥- 차오릅니다.
-                    setTimeout(() => {
-                        document.getElementById('dashboard-content').style.opacity = "1";
-                        document.getElementById('dashboard-content').style.transition = "opacity 0.2s";
-                    }, 50);
-                } else {
-                    alert("데이터 실패: " + res.message);
-                    document.getElementById('dashboard-content').style.opacity = "1";
+        function buildDashboard(records) {
+            Object.keys(chartInstances).forEach(key => {
+                if(chartInstances[key]) {
+                    chartInstances[key].destroy();
+                    chartInstances[key] = null;
                 }
-            })
-            .catch(err => {
-                document.getElementById('loading-indicator').style.display = "none";
-                document.getElementById('dashboard-content').style.opacity = "1";
-                alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             });
-        }
 
-            // -------------------------------------------------------------------------
-            // 1. 세로 막대형 차트 (stackedBarChart)
-            // -------------------------------------------------------------------------
+            let fids = [...new Set(records.map(r => r.fid))].sort();
+            let inspectors = [...new Set(records.map(r => r.inspector))];
+            const fidCount = fids.length;
+
+            // 1. 세로 막대형 차트
             const stackedCanvas = document.getElementById('stackedBarChart');
-            
             if (fidCount > 10) {
                 let dynamicWidth = fidCount * 55; 
                 stackedCanvas.style.width = dynamicWidth + "px";
@@ -385,22 +331,14 @@
                     }]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000, // 1초 동안 슥 올라옴
-                        easing: 'easeOutQuart'
-                    },
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 800, easing: 'easeOutQuart' },
                     scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
                 }
             });
 
-
-            // -------------------------------------------------------------------------
-            // 2. 가로 막대형 차트 (horizontalBarChart)
-            // -------------------------------------------------------------------------
+            // 2. 가로 막대형 차트
             const horizontalCanvas = document.getElementById('horizontalBarChart');
-            
             if (fidCount > 10) {
                 let dynamicHeight = fidCount * 30; 
                 horizontalCanvas.style.height = dynamicHeight + "px";
@@ -422,21 +360,13 @@
                     }]
                 },
                 options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 800, easing: 'easeOutQuart' },
                     scales: { x: { beginAtZero: true } } 
                 }
             });
 
-
-            // -------------------------------------------------------------------------
             // 3. 피봇 테이블 데이터 업데이트
-            // -------------------------------------------------------------------------
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
             fids.forEach(fid => {
@@ -445,13 +375,9 @@
             });
             pivotBody.innerHTML = tableHtml;
 
-
-            // -------------------------------------------------------------------------
-            // 4. 원형 차트 (pieChart)
-            // -------------------------------------------------------------------------
+            // 4. 원형 차트 (★[교정 완료] 누락되었던 괄호 복구 및 툴팁 가독성 개선)
             let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
             let total = inspectorData.reduce((a, b) => a + b, 0); 
-            
             const pieCanvas = document.getElementById('pieChart');
 
             chartInstances.pieChart = new Chart(pieCanvas, {
@@ -465,12 +391,8 @@
                 },
                 plugins: [ChartDataLabels],
                 options: {
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    },
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 800, easing: 'easeOutQuart' },
                     plugins: {
                         datalabels: {
                             color: '#ffffff',
