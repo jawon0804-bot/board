@@ -306,34 +306,33 @@
             });
         }
 
+        // [최종 수정된 자동 동기화 로직]
         async function syncDashboard() {
-            console.log("⏰ 1분 타이머: 동기화 체크 시작..."); // 🔴 이게 콘솔에 찍히나요?
-            
             const loginOverlay = document.getElementById('login-overlay');
-            if (loginOverlay && loginOverlay.style.display !== 'none') {
-                console.log("로그인 안됨 -> 동기화 건너뜀");
-                return;
-            }
+            // 로그인 안 되어 있으면 동기화 패스
+            if (loginOverlay && loginOverlay.style.display !== 'none') return;
             
             try {
-                const url = DATA_WEB_APP_URL + "?t=" + Date.now();
-                const response = await fetch(url, { cache: 'no-store' });
-                const json = await response.json();
+                // [핵심] ?t=${Date.now()}를 붙여서 서버가 '진짜 최신값'을 내뱉게 강제합니다.
+                const res = await fetch(DATA_WEB_APP_URL + "?t=" + Date.now(), { cache: 'no-store' });
+                const json = await res.json();
                 
-                console.log("서버 응답 확인:", json); // 🔴 서버에서 뭐라고 답하는지 여기서 보입니다!
-        
-                if (json.lastUpdate && json.lastUpdate !== lastKnownTime) {
-                    console.log("✅ AD2 신호 감지! 데이터 갱신 실행!");
-                    lastKnownTime = json.lastUpdate;
-                    loadDashboardData(); 
-                } else {
-                    console.log("ℹ️ 신호 없음(데이터 동일) -> 대기");
+                // [안전장치] 만약 lastUpdate가 없더라도 status가 success면 무조건 갱신하도록 수정
+                if (json.status === "success") {
+                    // 값이 바뀌었거나, 최초 로딩 이후 업데이트 필요 시
+                    if (!lastKnownTime || json.lastUpdate !== lastKnownTime) {
+                        console.log("자동 갱신 신호 포착! 데이터를 새로 고칩니다.");
+                        lastKnownTime = json.lastUpdate;
+                        loadDashboardData(); 
+                    }
                 }
             } catch (err) {
-                console.error("❌ 동기화 체크 중 에러 발생:", err); // 여기서 빨간색 에러가 뜰 겁니다.
+                console.error("자동 동기화 체크 중 오류 발생:", err);
             }
         }
-                setInterval(syncDashboard, 60000);
+        
+        // 1분(60,000ms)마다 자동 실행
+        setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
             if (!records || records.length === 0) return;
