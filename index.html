@@ -307,26 +307,30 @@
         }
 
         async function syncDashboard() {
+            console.log("⏰ 1분 타이머: 동기화 체크 시작..."); // 🔴 이게 콘솔에 찍히나요?
+            
             const loginOverlay = document.getElementById('login-overlay');
-            if (loginOverlay && loginOverlay.style.display !== 'none') return;
+            if (loginOverlay && loginOverlay.style.display !== 'none') {
+                console.log("로그인 안됨 -> 동기화 건너뜀");
+                return;
+            }
             
             try {
-                // 서버에 데이터를 요청 (t 파라미터를 붙여 캐시 방지)
-                const res = await fetch(`${DATA_WEB_APP_URL}?t=${Date.now()}`, { mode: 'cors', cache: 'no-store' });
-                const json = await res.json();
+                const url = DATA_WEB_APP_URL + "?t=" + Date.now();
+                const response = await fetch(url, { cache: 'no-store' });
+                const json = await response.json();
                 
-                // 🔴 핵심 수정: lastUpdate만 비교하지 말고, 
-                // 데이터 레코드가 실제로 존재하고, 갱신된 신호가 있으면 무조건 loadDashboardData 호출!
-                if (json.status === "success" && json.records) {
-                    // lastUpdate가 바뀌었거나, 로컬 저장된 데이터보다 최근이라면 로드
-                    if (json.lastUpdate !== lastKnownTime) {
-                        console.log("새로운 데이터 감지! 갱신 시작...");
-                        lastKnownTime = json.lastUpdate; // 시간값 갱신
-                        loadDashboardData(); 
-                    }
+                console.log("서버 응답 확인:", json); // 🔴 서버에서 뭐라고 답하는지 여기서 보입니다!
+        
+                if (json.lastUpdate && json.lastUpdate !== lastKnownTime) {
+                    console.log("✅ AD2 신호 감지! 데이터 갱신 실행!");
+                    lastKnownTime = json.lastUpdate;
+                    loadDashboardData(); 
+                } else {
+                    console.log("ℹ️ 신호 없음(데이터 동일) -> 대기");
                 }
             } catch (err) {
-                console.error("자동 동기화 체크 중 오류:", err);
+                console.error("❌ 동기화 체크 중 에러 발생:", err); // 여기서 빨간색 에러가 뜰 겁니다.
             }
         }
                 setInterval(syncDashboard, 60000);
