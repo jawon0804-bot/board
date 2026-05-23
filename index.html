@@ -307,24 +307,26 @@
         }
 
         async function syncDashboard() {
+            // 1. 로그인 창이 떠 있으면 동기화 패스 (이건 안전을 위해 필수입니다!)
             const loginOverlay = document.getElementById('login-overlay');
             if (loginOverlay && loginOverlay.style.display !== 'none') return;
             
             try {
-                const securedUrl = `${DATA_WEB_APP_URL}?t=${Date.now()}`;
-                const res = await fetch(securedUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
+                // 2. 구글 시트에서 최신 업데이트 시간만 살짝 찔러봅니다.
+                const res = await fetch(DATA_WEB_APP_URL + "?t=" + Date.now(), { cache: 'no-store' }); 
                 const json = await res.json();
                 
+                // 3. 마지막으로 받은 시간(lastKnownTime)과 서버의 시간이 다르면 강제 갱신!
                 if (json.lastUpdate && json.lastUpdate !== lastKnownTime) {
+                    console.log("새 데이터 발견! 대시보드 갱신...");
                     loadDashboardData(); 
                 }
             } catch (err) {
-                console.error("자동 동기화 체크 중 오류:", err);
-                const globalLoaderErr = document.getElementById('global-loader');
-                if (globalLoaderErr) { globalLoaderErr.style.display = 'none'; }
+                console.error("동기화 체크 오류:", err);
             }
         }
         
+        // 60초마다 갱신 (이미 예전 코드에도 있으셨을 겁니다!)
         setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
@@ -389,8 +391,6 @@
                 fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> 전체화면';
             }
         });
-        
-             setInterval(syncDashboard, 60000);
         
         function buildDashboard(records) {
             Object.keys(chartInstances).forEach(key => {
