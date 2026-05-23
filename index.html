@@ -307,26 +307,28 @@
         }
 
         async function syncDashboard() {
-            // 1. 로그인 창이 떠 있으면 동기화 패스 (이건 안전을 위해 필수입니다!)
             const loginOverlay = document.getElementById('login-overlay');
+            // 로그인 안 되어 있으면 대기
             if (loginOverlay && loginOverlay.style.display !== 'none') return;
             
             try {
-                // 2. 구글 시트에서 최신 업데이트 시간만 살짝 찔러봅니다.
-                const res = await fetch(DATA_WEB_APP_URL + "?t=" + Date.now(), { cache: 'no-store' }); 
+                // 1. 서버에 '지금 도장(신호) 있나?' 하고 물어보는 체크용 URL 호출
+                // (과장님이 쓰시던 기존 체크 로직 URL을 사용하세요)
+                const res = await fetch(DATA_WEB_APP_URL + "?mode=check&t=" + Date.now(), { cache: 'no-store' });
                 const json = await res.json();
                 
-                // 3. 마지막으로 받은 시간(lastKnownTime)과 서버의 시간이 다르면 강제 갱신!
-                if (json.lastUpdate && json.lastUpdate !== lastKnownTime) {
-                    console.log("새 데이터 발견! 대시보드 갱신...");
+                // 2. 도장이 찍혀서 값이 변했거나, 새로운 신호가 들어왔는지 확인
+                // json.lastUpdate 대신 도장 상태값을 확인하는 로직으로 변경 가능
+                if (json.hasNewData === true) { // 도장이 찍혔다는 신호가 오면
+                    console.log("신호 감지! 데이터 로드 시작...");
                     loadDashboardData(); 
                 }
             } catch (err) {
-                console.error("동기화 체크 오류:", err);
+                console.error("자동 동기화 체크 오류:", err);
             }
         }
         
-        // 60초마다 갱신 (이미 예전 코드에도 있으셨을 겁니다!)
+        // 이 타이머는 무조건 살려두셔야 1분마다 신호를 확인합니다!
         setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
@@ -429,9 +431,9 @@
                     monthText = `${monthsInQuery[0]}월`;
                 }
 
-                firstCardTitle.innerHTML = `<i class="fas fa-chart-column"></i> [${monthText}] ${userCenter} 설비 총 점검 횟수`;
+                firstCardTitle.innerHTML = `<i class="fas fa-chart-column"></i> [${monthText}] ${userCenter} 설비 일별 점검 횟수`;
             } else if (firstCardTitle) {
-                firstCardTitle.innerHTML = `<i class="fas fa-chart-column"></i> [전체 누적] ${userCenter} 설비 총 점검 횟수`;
+                firstCardTitle.innerHTML = `<i class="fas fa-chart-column"></i> [전체 누적] ${userCenter} 설비 일별 점검 횟수`;
             }
 
             // ----------------------------------------------------
