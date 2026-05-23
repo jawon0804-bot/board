@@ -389,7 +389,9 @@
                 fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> 전체화면';
             }
         });
-
+        
+             setInterval(syncDashboard, 60000);
+        
         function buildDashboard(records) {
             Object.keys(chartInstances).forEach(key => {
                 if(chartInstances[key]) {
