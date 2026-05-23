@@ -308,28 +308,28 @@
 
         async function syncDashboard() {
             const loginOverlay = document.getElementById('login-overlay');
-            // 로그인 안 되어 있으면 대기
             if (loginOverlay && loginOverlay.style.display !== 'none') return;
             
             try {
-                // 1. 서버에 '지금 도장(신호) 있나?' 하고 물어보는 체크용 URL 호출
-                // (과장님이 쓰시던 기존 체크 로직 URL을 사용하세요)
-                const res = await fetch(DATA_WEB_APP_URL + "?mode=check&t=" + Date.now(), { cache: 'no-store' });
+                // 서버에 데이터를 요청 (t 파라미터를 붙여 캐시 방지)
+                const res = await fetch(`${DATA_WEB_APP_URL}?t=${Date.now()}`, { mode: 'cors', cache: 'no-store' });
                 const json = await res.json();
                 
-                // 2. 도장이 찍혀서 값이 변했거나, 새로운 신호가 들어왔는지 확인
-                // json.lastUpdate 대신 도장 상태값을 확인하는 로직으로 변경 가능
-                if (json.hasNewData === true) { // 도장이 찍혔다는 신호가 오면
-                    console.log("신호 감지! 데이터 로드 시작...");
-                    loadDashboardData(); 
+                // 🔴 핵심 수정: lastUpdate만 비교하지 말고, 
+                // 데이터 레코드가 실제로 존재하고, 갱신된 신호가 있으면 무조건 loadDashboardData 호출!
+                if (json.status === "success" && json.records) {
+                    // lastUpdate가 바뀌었거나, 로컬 저장된 데이터보다 최근이라면 로드
+                    if (json.lastUpdate !== lastKnownTime) {
+                        console.log("새로운 데이터 감지! 갱신 시작...");
+                        lastKnownTime = json.lastUpdate; // 시간값 갱신
+                        loadDashboardData(); 
+                    }
                 }
             } catch (err) {
-                console.error("자동 동기화 체크 오류:", err);
+                console.error("자동 동기화 체크 중 오류:", err);
             }
         }
-        
-        // 이 타이머는 무조건 살려두셔야 1분마다 신호를 확인합니다!
-        setInterval(syncDashboard, 60000);
+                setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
             if (!records || records.length === 0) return;
