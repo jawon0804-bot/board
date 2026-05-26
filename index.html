@@ -17,7 +17,7 @@
             --accent-blue: #3b82f6;
         }
         
-        /* [일반 창 모드 기본값] - 기본 상태에서는 높이가 무한정 늘어나지 않도록 명확하게 격리 */
+        /* [일반 창 모드 기본값] */
         html, body {
             margin: 0; box-sizing: border-box; height: auto !important; overflow: auto !important;
         }
@@ -74,7 +74,7 @@
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
 
-        /* [일반 창 모드] 평소에는 무조건 360px로 칼종료 및 고정 배치 */
+        /* [일반 창 모드] 고정 격자 구조 */
         .dashboard-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -85,10 +85,10 @@
             background: var(--card-bg); border-radius: 12px; padding: 20px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color); 
             box-sizing: border-box; display: flex; flex-direction: column; min-height: 0;
-            height: 360px !important; /* 일반창 복귀 시 이 크기로 무조건 강제 고정 */
+            height: 360px !important;
         }
         
-        /* 💡 [수정/보완] 오직 전체화면 상태(:fullscreen)가 '활성화' 되었을 때만 스타일 덮어쓰기 */
+        /* [전체화면 모드 전용 스타일] */
         :-webkit-full-screen body { height: 100vh !important; padding: 12px !important; overflow: hidden !important; }
         :-ms-fullscreen body { height: 100vh !important; padding: 12px !important; overflow: hidden !important; }
         :fullscreen body {
@@ -110,7 +110,7 @@
             gap: 12px !important;
         }
         :fullscreen .chart-card {
-            height: 100% !important; /* 전체화면일 때만 360px 깨부수고 화면에 맞춤 */
+            height: 100% !important;
             padding: 12px 16px !important;
         }
         :fullscreen .chart-card h3 {
@@ -144,7 +144,7 @@
 </head>
 <body>
 
-    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:9999; display:flex; justify-content:center; align-items:center;">
+    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:9999; display:none; justify-content:center; align-items:center;">
         <div style="width:320px; background:#ffffff; padding: 30px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); text-align:center; box-sizing: border-box;">
             <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center;">
                 <img src="assets/logo.jpg" alt="Company Logo" style="height: 48px; width: auto; object-fit: contain;" onerror="this.style.display='none';">
@@ -171,6 +171,9 @@
                 <button class="refresh-btn" onclick="toggleFullScreen()" style="background: #4b5563;">
                     <i class="fa-solid fa-expand"></i> 전체화면
                 </button>  
+                <button class="refresh-btn" onclick="logout()" style="background: #ef4444; padding: 10px 15px;">
+                    <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+                </button>
             </div>
         </div>
 
@@ -256,8 +259,7 @@
                                     <th style="padding: 6px; background: #f1f5f9; position: sticky; top: 0;">점검 횟수</th>
                                 </tr>
                             </thead>
-                            <tbody id="inspector-pivot-body">
-                                </tbody>
+                            <tbody id="inspector-pivot-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -283,9 +285,22 @@
         
         Chart.register(ChartDataLabels);
 
+        // 💡 [자동 로그인 시스템] 페이지 로드 시 저장된 유저 정보가 있는지 확인
         window.onload = function() {
             document.getElementById("startDate").value = ""; 
             document.getElementById("endDate").value = ""; 
+            
+            const savedCenter = localStorage.getItem("userCenter");
+            if (savedCenter) {
+                // 이미 로그인 이력이 있다면 곧바로 대시보드 진입
+                userCenter = savedCenter;
+                document.getElementById('dashboard-title').innerText = `[${userCenter}] 시설물 점검 실시간 모니터링 현황판`;
+                document.getElementById('login-overlay').style.display = 'none';
+                loadDashboardData();
+            } else {
+                // 정보가 없다면 로그인창 띄우기
+                document.getElementById('login-overlay').style.display = 'flex';
+            }
         }
 
         function resetDateFilter() {
@@ -310,6 +325,10 @@
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
                     userCenter = res.center;
+                    
+                    // 💡 브라우저에 로그인 정보 기록
+                    localStorage.setItem("userCenter", res.center);
+                    
                     document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
                     document.getElementById('login-overlay').style.display = 'none';
                     loadDashboardData(); 
@@ -322,6 +341,14 @@
             }
         }
 
+        // 로그아웃 버튼용 기능 (필요할 때 완전 초기화 가능하도록 추가)
+        function logout() {
+            if(confirm("로그아웃 하시겠습니까?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         function loadDashboardData() {
             const loginOverlay = document.getElementById('login-overlay');
             const indicator = document.getElementById('loading-indicator');
@@ -330,6 +357,7 @@
             if (loginOverlay && loginOverlay.style.display !== 'none') {
                 if (indicator) { indicator.style.display = "none"; }
                 if (globalLoader) { globalLoader.style.display = 'none'; }
+                return; // 로그인 창 켜져있으면 작동 방지
             } else {
                 if (indicator) { indicator.style.display = "block"; }
                 if (globalLoader) { globalLoader.style.display = 'flex'; }
@@ -375,7 +403,6 @@
                 
                 if (json.status === "success") {
                     if (!lastKnownTime || json.lastUpdate !== lastKnownTime) {
-                        console.log("자동 갱신 신호 포착! 데이터를 새로 고칩니다.");
                         lastKnownTime = json.lastUpdate;
                         loadDashboardData(); 
                     }
@@ -434,15 +461,12 @@
             }
         }
         
+        // 💡 [핵심 구현] 전체화면 감지 및 종료 시 새로고침 강제 연동
         document.addEventListener("fullscreenchange", () => {
-            const fsBtn = document.querySelector('[onclick="toggleFullScreen()"]');
-            if (document.fullscreenElement) {
-                fsBtn.innerHTML = '<i class="fa-solid fa-compress"></i> 전체화면 종료';
-            } else {
-                fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> 전체화면';
+            if (!document.fullscreenElement) {
+                // 💥 전체화면 상태에서 빠져나오는 순간 페이지를 클린 리로드 시킴!
+                location.reload();
             }
-            // 브라우저 리사이즈/레이아웃 복구 트리거 강제 발생
-            window.dispatchEvent(new Event('resize'));
         });
         
         function buildDashboard(records) {
@@ -480,7 +504,7 @@
                 firstCardTitle.innerHTML = `<i class="fas fa-chart-column"></i> [전체 누적] ${userCenter} 설비 일별 점검 횟수`;
             }
 
-            // 1번 뷰: 날짜별 설비 총 점검 횟수
+            // 1번 뷰
             const stackedCanvas = document.getElementById('stackedBarChart');
             if (dateCount > 7) {
                 stackedCanvas.style.width = (dateCount * 75) + "px";
@@ -491,9 +515,7 @@
             let customDateLabels = dates.map(dateStr => {
                 if(!dateStr) return "";
                 const match = dateStr.match(/-(\d{2})$/); 
-                if(match) {
-                    return parseInt(match[1], 10) + "일"; 
-                }
+                if(match) return parseInt(match[1], 10) + "일"; 
                 return dateStr;
             });
 
@@ -528,9 +550,8 @@
                 }
             });
 
-            // 2번 뷰: 가로 막대 차트 Record Count
+            // 2번 뷰
             const horizontalCanvas = document.getElementById('horizontalBarChart');
-
             const categories = {
                 "🚨 소방설비": 0,
                 "⚡ 전기설비": 0,
@@ -541,11 +562,11 @@
 
             records.forEach(r => {
                 const fid = r.fid || "";
-                if (fid.includes('소방')) { categories["🚨 소방설비"]++; }
-                else if (fid.includes('전기')) { categories["⚡ 전기설비"]++; }
-                else if (fid.includes('순찰')) { categories["👮‍♂️ 순찰기록"]++; }
-                else if (fid.includes('기계') || fid.includes('공조')) { categories["⚙️ 기계/공조"]++; }
-                else { categories["🛠️ 기타설비"]++; }
+                if (fid.includes('소방')) categories["🚨 소방설비"]++;
+                else if (fid.includes('전기')) categories["⚡ 전기설비"]++;
+                else if (fid.includes('순찰')) categories["👮‍♂️ 순찰기록"]++;
+                else if (fid.includes('기계') || fid.includes('공조')) categories["⚙️ 기계/공조"]++;
+                else categories["🛠️ 기타설비"]++;
             });
 
             const categoryLabels = Object.keys(categories);
@@ -564,9 +585,7 @@
                     }] 
                 },
                 options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
                     scales: { 
                         x: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748b' }, grid: { color: '#f1f5f9' }, grace: '15%' },
                         y: { ticks: { color: '#1e293b', font: { weight: 'bold', size: 12 } }, grid: { display: false } }
@@ -582,28 +601,20 @@
                 }
             });
 
-            // 3번 뷰: 통합점검기록 피봇 테이블
+            // 3번 뷰
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
-
             const fidLocations = {
-                "전기_01": "전기실",
-                "전기_02": "발전기실",
-                "소방_01": "1F_1구역_소화기",
-                "소방_02": "1F_2구역_가스계 소화기",
-                "소방_05": "1F_1구역_옥내소화전",
-                "소방_06": "1F_2구역_옥외소화전",
-                "소방_07": "3F_A구역_방화셔터",
-                "소방_08": "3F_B구역_스프링클러",
-                "소방_10": "3F_C구역_화재감지기",
-                "순찰_01": "외곽 선로",
-                "순찰_02": "옥상 공조실 주행"
+                "전기_01": "전기실", "전기_02": "발전기실",
+                "소방_01": "1F_1구역_소화기", "소방_02": "1F_2구역_가스계 소화기",
+                "소방_05": "1F_1구역_옥내소화전", "소방_06": "1F_2구역_옥외소화전",
+                "소방_07": "3F_A구역_방화셔터", "소방_08": "3F_B구역_스프링클러", "소방_10": "3F_C구역_화재감지기",
+                "순찰_01": "외곽 선로", "순찰_02": "옥상 공조실 주행"
             };
 
             fids.forEach(fid => {
                 let totalCount = records.filter(r => r.fid === fid).length;
                 const locationText = fidLocations[fid] ? ` (${fidLocations[fid]})` : "";
-                
                 tableHtml += `<tr>
                     <td style="font-weight:bold; color:#1e293b; text-align:left; padding-left:20px;">
                         ${fid}<span style="color:#64748b; font-weight:normal;">${locationText}</span>
@@ -611,18 +622,12 @@
                     <td style="font-weight:bold; color:#3b82f6; text-align:center;">${totalCount} 건</td>
                 </tr>`;
             });
-            
             pivotBody.innerHTML = tableHtml || `<tr><td colspan="2" style="color:#94a3b8; padding:40px; text-align:center;">일치하는 점검 데이터가 없습니다.</td></tr>`;
 
-            // 4번 뷰: 작업자 많은 순 정렬 + 미니 피봇 글자 중앙 정렬 + 비율 조정
+            // 4번 뷰
             let inspectorDataList = inspectors.map((ins, idx) => {
-                return {
-                    name: ins,
-                    count: records.filter(r => r.inspector === ins).length,
-                    color: palette[idx % palette.length]
-                };
+                return { name: ins, count: records.filter(r => r.inspector === ins).length, color: palette[idx % palette.length] };
             });
-
             inspectorDataList.sort((a, b) => b.count - a.count);
 
             let sortedLabels = inspectorDataList.map(item => item.name);
@@ -632,16 +637,13 @@
 
             const inspectorPivotBody = document.getElementById('inspector-pivot-body');
             let inspectorTableHtml = "";
-
             inspectorDataList.forEach(item => {
-                inspectorTableHtml += `
-                    <tr>
-                        <td style="font-weight: bold; color: #334155;">
-                            <span style="display:inline-block; width:10px; height:10px; background-color:${item.color}; border-radius:50%; margin-right:6px;"></span>
-                            ${item.name}
-                        </td>
-                        <td style="font-weight: bold; color: #475569;">${item.count} 건</td>
-                    </tr>`;
+                inspectorTableHtml += `<tr>
+                    <td style="font-weight: bold; color: #334155;">
+                        <span style="display:inline-block; width:10px; height:10px; background-color:${item.color}; border-radius:50%; margin-right:6px;"></span>${item.name}
+                    </td>
+                    <td style="font-weight: bold; color: #475569;">${item.count} 건</td>
+                </tr>`;
             });
             inspectorPivotBody.innerHTML = inspectorTableHtml || `<tr><td colspan="2" style="color:#94a3b8; padding:20px;">기록 없음</td></tr>`;
 
@@ -650,17 +652,13 @@
                 type: 'pie',
                 data: {
                     labels: sortedLabels,
-                    datasets: [{
-                        data: sortedCounts,
-                        backgroundColor: sortedColors
-                    }]
+                    datasets: [{ data: sortedCounts, backgroundColor: sortedColors }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         datalabels: {
-                            color: '#ffffff',
-                            font: { weight: 'bold', size: 11 },
+                            color: '#ffffff', font: { weight: 'bold', size: 11 },
                             formatter: function(value, context) {
                                 if (total === 0) return '';
                                 let percentage = ((value / total) * 100).toFixed(1);
