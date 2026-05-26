@@ -76,7 +76,7 @@
         
         /* 💡 [트릭 구현] 변신형 비밀 로그아웃 버튼 애니메이션 효과 */
         .hidden-logout-btn {
-            background: #ef4444; /* 평소에는 연한 회색 세로선처럼 보이도록 설정 */
+            background: #cbd5e1; /* 평소에는 연한 회색 세로선처럼 보이도록 설정 */
             color: transparent;  /* 글자 숨김 */
             border: none;
             width: 4px;          /* 평소에는 'I' 모양처럼 얇게 */
@@ -84,7 +84,7 @@
             padding: 0 !important;
             border-radius: 2px;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* 부드럽고 찰진 변신 모션 */
+            transition: all 1.25s cubic-bezier(0.25, 1, 0.5, 1); /* 부드럽고 찰진 변신 모션 */
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -109,7 +109,7 @@
             background: #ef4444; /* 마우스 오면 강렬한 레드로 변경 */
             color: white;
             width: 105px;        /* 원래 버튼 너비로 쫙 펼쳐짐 */
-            height: 38px;        /* 일반 버튼 크기로 팽창 */
+            height: 32px;        /* 일반 버튼 크기로 팽창 */
             padding: 0 15px !important;
             border-radius: 6px;
         }
@@ -118,7 +118,8 @@
         .hidden-logout-btn:hover span,
         .hidden-logout-btn:hover i {
             opacity: 1;
-            transition-delay: 1.5s; /* 노출 타이밍 조율 */
+            transition: opacity 0.2s ease;
+            transition-delay: 0.15s; /* 노출 타이밍 조율 */
         }
         
         .filter-bar {
