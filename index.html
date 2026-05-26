@@ -90,7 +90,7 @@
         .table-wrapper { width: 100%; overflow-x: auto; height: 300px; }
         .pivot-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
         .pivot-table th { background: #edf2f7; color: #4a5568; padding: 10px; font-weight: bold; border: 1px solid var(--border-color); position: sticky; top: 0; }
-        .pivot-table td { padding: 10px; border: 1px solid var(--border-color); }
+        .pivot-table td { padding: 10px; border: 1px solid var(--border-color); text-align: center !important; }
         .pivot-table tr:nth-child(even) { background: #f8fafc; }
         
         .loading-view { text-align: center; font-size: 18px; padding: 15px; color: var(--accent-blue); font-weight: bold; }
@@ -599,32 +599,31 @@
             // ----------------------------------------------------
             // 4번 뷰: 점검자별 비율 파이 차트
             // ----------------------------------------------------
-            let inspectorData = inspectors.map(ins => records.filter(r => r.inspector === ins).length);
-            let total = inspectorData.reduce((a, b) => a + b, 0); 
             const pieCanvas = document.getElementById('pieChart');
-
             chartInstances.pieChart = new Chart(pieCanvas, {
                 type: 'pie',
                 data: {
-                    labels: inspectors,
+                    labels: sortedLabels,
                     datasets: [{
-                        data: inspectorData,
-                        backgroundColor: palette.slice(0, inspectors.length)
+                        data: sortedCounts,
+                        backgroundColor: sortedColors
                     }]
                 },
+                plugins: [ChartDataLabels],
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
+                        legend: { display: false }, 
                         datalabels: {
                             color: '#ffffff',
                             font: { weight: 'bold', size: 11 },
                             formatter: function(value, context) {
                                 if (total === 0) return '';
                                 let percentage = ((value / total) * 100).toFixed(1);
-                                if (percentage < 6) return ''; 
-                                return context.chart.data.labels[context.dataIndex] + '\n' + percentage + '%';
+                                if (percentage < 8) return ''; 
+                                return percentage + '%';
                             },
-                            align: 'center', anchor: 'center', textAlign: 'center'
+                            align: 'center', anchor: 'center'
                         },
                         tooltip: {
                             callbacks: {
