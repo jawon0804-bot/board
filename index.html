@@ -17,16 +17,15 @@
             --accent-blue: #3b82f6;
         }
         
-        /* 꽉 찬 화면을 만들기 위한 기본 체격 설정 */
+        /* 꽉 찬 화면 레이아웃 기본 뼈대 설정 */
         html, body {
             height: 100%; margin: 0; box-sizing: border-box;
         }
         body {
             padding: 20px; font-family: 'Malgun Gothic', dotum, sans-serif; background: var(--bg-dark); color: var(--text-main);
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; overflow: hidden; /* 전체화면 시 스크롤바 원천 차단 */
         }
         
-        /* 대시보드 메인 감싸는 바구니 */
         #dashboard-content {
             display: flex; flex-direction: column; flex: 1; min-height: 0;
         }
@@ -75,13 +74,15 @@
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
 
-        /* 💡 핵심: 아래 빈 공간을 채우도록 격자(Grid) 높이를 유연하게(flex: 1) 늘립니다 */
+        /* 💡 핵심 수정: grid-template-rows: 1fr 1fr 를 주어 상하 높이를 정확히 50대 50으로 고정했습니다 */
         .dashboard-grid { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: 1fr 1fr; 
+            gap: 20px; 
             flex: 1; min-height: 0; margin-bottom: 10px;
         }
         
-        /* 차트 카드 박스들도 자식 요소를 100% 꽉 채우도록 수선 */
         .chart-card { 
             background: var(--card-bg); border-radius: 12px; padding: 20px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color); 
@@ -89,7 +90,6 @@
         }
         .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         
-        /* 💡 높이 고정(300px)을 제거하고, 부모 크기에 맞춰 퍼지도록 100%로 변경 */
         .scrollable-chart-box-x { position: relative; flex: 1; width: 100%; overflow-x: auto; overflow-y: hidden; min-height: 0; }
         .scrollable-chart-box-y { position: relative; flex: 1; width: 100%; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; }
         .table-wrapper { width: 100%; overflow-x: auto; flex: 1; min-height: 0; }
@@ -99,7 +99,7 @@
         .pivot-table td { padding: 10px; border: 1px solid var(--border-color); }
         .pivot-table tr:nth-child(even) { background: #f8fafc; }
         
-        /* 4번 미니 피봇 영역 - 양끝 정렬하되, 가운데로 은은하게 모이게 마법의 패딩 주입 */
+        /* 4번 영역 정렬 및 비율 */
         .pie-split-container { 
             display: flex; width: 100%; flex: 1; min-height: 0;
             align-items: center; justify-content: space-between; 
@@ -108,7 +108,7 @@
         .pie-left-box { width: 45%; display: flex; justify-content: center; align-items: center; height: 100%; }
         .table-right-box { width: 45%; height: 90%; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; }
 
-        /* 3번 피봇과 격리: 오직 4번 미니 테이블(#inspector-pivot-body)의 글자들만 완벽히 정중앙 정렬 */
+        /* 3번 피봇 보호: 오직 4번 미니 테이블 글자만 가운데 정렬 */
         #inspector-pivot-body td { text-align: center !important; }
         
         .loading-view { text-align: center; font-size: 18px; padding: 15px; color: var(--accent-blue); font-weight: bold; flex-shrink: 0; }
