@@ -91,7 +91,7 @@
             justify-content: center;
             gap: 8px;
             
-            /* 💡 [수정] 버튼 자체를 오른쪽 끝으로 강제 배달 시킵니다 */
+            /* 💡 버튼 자체를 오른쪽 끝으로 강제 배달 시킵니다 */
             margin-left: auto; 
         }
         
@@ -101,11 +101,10 @@
             opacity: 0;
             transition: opacity 0.2s ease;
             white-space: nowrap;
-            /* 💡 [수정] 꼬이게 만들었던 내부 margin-left 제거 */
         }
         
-        /* 💡 [수정] 검색창(.filter-bar)이나 버튼 자체에 마우스가 오면 켜지도록 조건 변경! */
-        .filter-bar:hover .hidden-logout-btn,
+        /* 💡 [수정] 중요! `.filter-bar:hover` 조건을 삭제했습니다.
+           이제 오직 버튼 자기 자신(`.hidden-logout-btn:hover`) 위에 마우스가 올라갔을 때만 펴집니다! */
         .hidden-logout-btn:hover {
             background: #ef4444; /* 마우스 오면 강렬한 레드로 변경 */
             color: white;
@@ -115,9 +114,7 @@
             border-radius: 6px;
         }
         
-        /* 💡 [수정] 마우스 호버 시 글자가 선명하게 보이도록 선택자 변경 */
-        .filter-bar:hover .hidden-logout-btn span,
-        .filter-bar:hover .hidden-logout-btn i,
+        /* 💡 [수정] 내부 글씨 서서히 등장 조건도 버튼 자체 호버(`:hover`)로 통일 */
         .hidden-logout-btn:hover span,
         .hidden-logout-btn:hover i {
             opacity: 1;
