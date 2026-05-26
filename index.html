@@ -17,13 +17,13 @@
             --accent-blue: #3b82f6;
         }
         
-        /* 꽉 찬 화면 레이아웃 기본 뼈대 설정 */
+        /* 기본 상태는 유연하게 설정 */
         html, body {
-            height: 100%; margin: 0; box-sizing: border-box;
+            margin: 0; box-sizing: border-box;
         }
         body {
             padding: 20px; font-family: 'Malgun Gothic', dotum, sans-serif; background: var(--bg-dark); color: var(--text-main);
-            display: flex; flex-direction: column; overflow: hidden; /* 전체화면 시 스크롤바 원천 차단 */
+            display: flex; flex-direction: column;
         }
         
         #dashboard-content {
@@ -74,20 +74,32 @@
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
 
-        /* 💡 핵심 수정: grid-template-rows: 1fr 1fr 를 주어 상하 높이를 정확히 50대 50으로 고정했습니다 */
+        /* 💡 [수정] 기본 일반 화면: 높이가 강제 고정되지 않고 차트가 예쁘게 나오는 최적의 고정 높이 지정 */
         .dashboard-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            grid-template-rows: 1fr 1fr; 
             gap: 20px; 
-            flex: 1; min-height: 0; margin-bottom: 10px;
+            margin-bottom: 10px;
         }
-        
         .chart-card { 
             background: var(--card-bg); border-radius: 12px; padding: 20px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color); 
             box-sizing: border-box; display: flex; flex-direction: column; min-height: 0;
+            height: 360px; /* 일반 화면에서 찌부러지지 않도록 방어 높이 설정 */
         }
+        
+        /* 💡 [핵심] 오직 전체화면(Fullscreen) 모드일 때만!! 화면을 꽉 채우고 반반(50:50) 정렬로 변신 */
+        :fullscreen body {
+            height: 100% !important; overflow: hidden !important;
+        }
+        :fullscreen .dashboard-grid {
+            flex: 1 !important;
+            grid-template-rows: 1fr 1fr !important; /* 상하 50대 50 */
+        }
+        :fullscreen .chart-card {
+            height: 100% !important; /* 부모 Grid 비율에 맞춰 꽉 차게 변경 */
+        }
+
         .chart-card h3 { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #475569; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         
         .scrollable-chart-box-x { position: relative; flex: 1; width: 100%; overflow-x: auto; overflow-y: hidden; min-height: 0; }
@@ -99,7 +111,7 @@
         .pivot-table td { padding: 10px; border: 1px solid var(--border-color); }
         .pivot-table tr:nth-child(even) { background: #f8fafc; }
         
-        /* 4번 영역 정렬 및 비율 */
+        /* 4번 영역 배치 */
         .pie-split-container { 
             display: flex; width: 100%; flex: 1; min-height: 0;
             align-items: center; justify-content: space-between; 
@@ -108,7 +120,7 @@
         .pie-left-box { width: 45%; display: flex; justify-content: center; align-items: center; height: 100%; }
         .table-right-box { width: 45%; height: 90%; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; }
 
-        /* 3번 피봇 보호: 오직 4번 미니 테이블 글자만 가운데 정렬 */
+        /* 3번 피봇 보호: 오직 4번 미니 테이블 글자만 정중앙 정렬 */
         #inspector-pivot-body td { text-align: center !important; }
         
         .loading-view { text-align: center; font-size: 18px; padding: 15px; color: var(--accent-blue); font-weight: bold; flex-shrink: 0; }
@@ -557,7 +569,7 @@
             });
 
             // ----------------------------------------------------
-            // 3번 뷰: 통합점검기록 피봇 테이블 (왼쪽 정렬 완벽 유지)
+            // 3번 뷰: 통합점검기록 피봇 테이블
             // ----------------------------------------------------
             const pivotBody = document.getElementById('pivot-body');
             let tableHtml = "";
@@ -570,7 +582,7 @@
                 "소방_05": "1F_1구역_옥내소화전",
                 "소방_06": "1F_2구역_옥외소화전",
                 "소방_07": "3F_A구역_방화셔터",
-                "소방_08": "3F_B구역_스프링클러",
+                "소방_08": "3F_B구역_스프リング클러",
                 "소방_10": "3F_C구역_화재감지기",
                 "순찰_01": "외곽 선로",
                 "순찰_02": "옥상 공조실 주행"
@@ -601,7 +613,6 @@
                 };
             });
 
-            // 많은 순 내림차순 정렬
             inspectorDataList.sort((a, b) => b.count - a.count);
 
             let sortedLabels = inspectorDataList.map(item => item.name);
@@ -609,7 +620,6 @@
             let sortedColors = inspectorDataList.map(item => item.color);
             let total = sortedCounts.reduce((a, b) => a + b, 0); 
 
-            // 우측 미니 피봇 테이블 데이터 주입
             const inspectorPivotBody = document.getElementById('inspector-pivot-body');
             let inspectorTableHtml = "";
 
@@ -625,7 +635,6 @@
             });
             inspectorPivotBody.innerHTML = inspectorTableHtml || `<tr><td colspan="2" style="color:#94a3b8; padding:20px;">기록 없음</td></tr>`;
 
-            // 파이 차트 렌더링
             const pieCanvas = document.getElementById('pieChart');
             chartInstances.pieChart = new Chart(pieCanvas, {
                 type: 'pie',
