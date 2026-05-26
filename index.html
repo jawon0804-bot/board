@@ -34,7 +34,11 @@
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); flex-shrink: 0;
         }
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-right { display: flex; gap: 10px; white-space: nowrap; }
+        
+        /* 헤더 우측 버튼 그룹 정의 */
+        .header-right { 
+            display: flex; align-items: center; gap: 10px; white-space: nowrap; 
+        }
         
         .company-logo {
             height: 52px; width: auto; object-fit: contain; transform-origin: center center;
@@ -63,10 +67,56 @@
         @keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .header-bar h2 { margin: 0; font-size: 24px; color: #1e293b; }
+        
+        /* 기본 상단 버튼 스타일 */
         .refresh-btn {
             background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;
         }
         .refresh-btn:hover { background: #1d4ed8; }
+        
+        /* 💡 [트릭 구현] 변신형 비밀 로그아웃 버튼 애니메이션 효과 */
+        .hidden-logout-btn {
+            background: #cbd5e1; /* 평소에는 연한 회색 세로선처럼 보이도록 설정 */
+            color: transparent; /* 글자 숨김 */
+            border: none;
+            width: 4px;        /* 평소에는 'I' 모양처럼 얇게 */
+            height: 32px;       /* 세로선 두께감 구현 */
+            padding: 0 !important;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* 부드럽고 찰진 변신 모션 */
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        /* 로그아웃 안쪽 아이콘/텍스트 감싸는 레이어 */
+        .hidden-logout-btn span, 
+        .hidden-logout-btn i {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+
+        /* 💡 마우스가 헤더 오른쪽 '버튼 영역 전체(header-right)' 혹은 버튼 근처에 진입하면 펴짐 */
+        .header-right:hover .hidden-logout-btn,
+        .hidden-logout-btn:hover {
+            background: #ef4444; /* 마우스 오면 강렬한 레드로 변경 */
+            color: white;
+            width: 105px;        /* 원래 버튼 너비로 쫙 펼쳐짐 */
+            height: 38px;        /* 일반 버튼 크기로 팽창 */
+            padding: 0 15px !important;
+            border-radius: 6px;
+        }
+        
+        /* 펼쳐진 후 내부 글씨 서서히 등장 */
+        .header-right:hover .hidden-logout-btn span,
+        .header-right:hover .hidden-logout-btn i {
+            opacity: 1;
+            transition-delay: 0.15s; /* 노출 타이밍 조율 */
+        }
         
         .filter-bar {
             background: var(--card-bg); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex-shrink: 0;
@@ -171,8 +221,10 @@
                 <button class="refresh-btn" onclick="toggleFullScreen()" style="background: #4b5563;">
                     <i class="fa-solid fa-expand"></i> 전체화면
                 </button>  
-                <button class="refresh-btn" onclick="logout()" style="background: #ef4444; padding: 10px 15px;">
-                    <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+                
+                <button class="hidden-logout-btn" onclick="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>로그아웃</span>
                 </button>
             </div>
         </div>
@@ -285,20 +337,17 @@
         
         Chart.register(ChartDataLabels);
 
-        // 💡 [자동 로그인 시스템] 페이지 로드 시 저장된 유저 정보가 있는지 확인
         window.onload = function() {
             document.getElementById("startDate").value = ""; 
             document.getElementById("endDate").value = ""; 
             
             const savedCenter = localStorage.getItem("userCenter");
             if (savedCenter) {
-                // 이미 로그인 이력이 있다면 곧바로 대시보드 진입
                 userCenter = savedCenter;
                 document.getElementById('dashboard-title').innerText = `[${userCenter}] 시설물 점검 실시간 모니터링 현황판`;
                 document.getElementById('login-overlay').style.display = 'none';
                 loadDashboardData();
             } else {
-                // 정보가 없다면 로그인창 띄우기
                 document.getElementById('login-overlay').style.display = 'flex';
             }
         }
@@ -325,8 +374,6 @@
                 if (res.status === "SUCCESS") {
                     alert("로그인 성공! (" + res.center + " 소속)");
                     userCenter = res.center;
-                    
-                    // 💡 브라우저에 로그인 정보 기록
                     localStorage.setItem("userCenter", res.center);
                     
                     document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
@@ -341,7 +388,6 @@
             }
         }
 
-        // 로그아웃 버튼용 기능 (필요할 때 완전 초기화 가능하도록 추가)
         function logout() {
             if(confirm("로그아웃 하시겠습니까?")) {
                 localStorage.clear();
@@ -357,7 +403,7 @@
             if (loginOverlay && loginOverlay.style.display !== 'none') {
                 if (indicator) { indicator.style.display = "none"; }
                 if (globalLoader) { globalLoader.style.display = 'none'; }
-                return; // 로그인 창 켜져있으면 작동 방지
+                return;
             } else {
                 if (indicator) { indicator.style.display = "block"; }
                 if (globalLoader) { globalLoader.style.display = 'flex'; }
@@ -461,10 +507,8 @@
             }
         }
         
-        // 💡 [핵심 구현] 전체화면 감지 및 종료 시 새로고침 강제 연동
         document.addEventListener("fullscreenchange", () => {
             if (!document.fullscreenElement) {
-                // 💥 전체화면 상태에서 빠져나오는 순간 페이지를 클린 리로드 시킴!
                 location.reload();
             }
         });
@@ -553,11 +597,7 @@
             // 2번 뷰
             const horizontalCanvas = document.getElementById('horizontalBarChart');
             const categories = {
-                "🚨 소방설비": 0,
-                "⚡ 전기설비": 0,
-                "👮‍♂️ 순찰기록": 0,
-                "⚙️ 기계/공조": 0,
-                "🛠️ 기타설비": 0
+                "🚨 소방설비": 0, "⚡ 전기설비": 0, "👮‍♂️ 순찰기록": 0, "⚙️ 기계/공조": 0, "🛠️ 기타설비": 0
             };
 
             records.forEach(r => {
@@ -608,7 +648,7 @@
                 "전기_01": "전기실", "전기_02": "발전기실",
                 "소방_01": "1F_1구역_소화기", "소방_02": "1F_2구역_가스계 소화기",
                 "소방_05": "1F_1구역_옥내소화전", "소방_06": "1F_2구역_옥외소화전",
-                "소방_07": "3F_A구역_방화셔터", "소방_08": "3F_B구역_스프링클러", "소방_10": "3F_C구역_화재감지기",
+                "소방_07": "3F_A구역_방화셔터", "소방_08": "3F_B구역_스프リング클러", "소방_10": "3F_C구역_화재감지기",
                 "순찰_01": "외곽 선로", "순찰_02": "옥상 공조실 주행"
             };
 
