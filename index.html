@@ -77,10 +77,10 @@
         /* 💡 [트릭 구현] 변신형 비밀 로그아웃 버튼 애니메이션 효과 */
         .hidden-logout-btn {
             background: #cbd5e1; /* 평소에는 연한 회색 세로선처럼 보이도록 설정 */
-            color: transparent; /* 글자 숨김 */
+            color: transparent;  /* 글자 숨김 */
             border: none;
-            width: 4px;        /* 평소에는 'I' 모양처럼 얇게 */
-            height: 32px;       /* 세로선 두께감 구현 */
+            width: 4px;          /* 평소에는 'I' 모양처럼 얇게 */
+            height: 32px;        /* 세로선 두께감 구현 */
             padding: 0 !important;
             border-radius: 2px;
             cursor: pointer;
@@ -90,6 +90,9 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            
+            /* 💡 [수정] 버튼 자체를 오른쪽 끝으로 강제 배달 시킵니다 */
+            margin-left: auto; 
         }
         
         /* 로그아웃 안쪽 아이콘/텍스트 감싸는 레이어 */
@@ -98,11 +101,11 @@
             opacity: 0;
             transition: opacity 0.2s ease;
             white-space: nowrap;
-            margin-left: auto;
+            /* 💡 [수정] 꼬이게 만들었던 내부 margin-left 제거 */
         }
-
-        /* 💡 마우스가 헤더 오른쪽 '버튼 영역 전체(header-right)' 혹은 버튼 근처에 진입하면 펴짐 */
-        .header-right:hover .hidden-logout-btn,
+        
+        /* 💡 [수정] 검색창(.filter-bar)이나 버튼 자체에 마우스가 오면 켜지도록 조건 변경! */
+        .filter-bar:hover .hidden-logout-btn,
         .hidden-logout-btn:hover {
             background: #ef4444; /* 마우스 오면 강렬한 레드로 변경 */
             color: white;
@@ -112,9 +115,11 @@
             border-radius: 6px;
         }
         
-        /* 펼쳐진 후 내부 글씨 서서히 등장 */
-        .header-right:hover .hidden-logout-btn span,
-        .header-right:hover .hidden-logout-btn i {
+        /* 💡 [수정] 마우스 호버 시 글자가 선명하게 보이도록 선택자 변경 */
+        .filter-bar:hover .hidden-logout-btn span,
+        .filter-bar:hover .hidden-logout-btn i,
+        .hidden-logout-btn:hover span,
+        .hidden-logout-btn:hover i {
             opacity: 1;
             transition-delay: 0.15s; /* 노출 타이밍 조율 */
         }
@@ -124,7 +129,6 @@
         }
         .filter-group { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #475569; }
         .filter-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; }
-
         /* [일반 창 모드] 고정 격자 구조 */
         .dashboard-grid { 
             display: grid; 
