@@ -8,6 +8,25 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
       media="print" onload="this.media='all'">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCgSuudB0Fax1ONAYHJwwYv99nhGAHIbO0", // Firebase 콘솔에서 복사한 전체 내용을 입력하세요
+        authDomain: "m-smart-90148.firebaseapp.com",
+        projectId: "m-smart-90148",
+        storageBucket: "m-smart-90148.appspot.com",
+        messagingSenderId: "267082158406",
+        appId: "1:267082158406:web:2c59cfea94918d49ea9547"
+      };
+      
+      // Firebase 초기화
+      firebase.initializeApp(firebaseConfig);
+      
+      // 전역에서 사용할 수 있도록 db 변수 선언
+      const db = firebase.firestore();
+    </script>  
     <style>
         :root {
             --bg-dark: #f4f6f9;
@@ -141,6 +160,7 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color); 
             box-sizing: border-box; display: flex; flex-direction: column; min-height: 0;
             height: 360px !important;
+            overflow: hidden;
         }
         
         /* [전체화면 모드 전용 스타일] */
@@ -294,7 +314,7 @@
                             <tr id="pivot-header">
                                 <th>설비ID</th>
                                 <th>점검 총 건수</th>
-                            </tr>
+                                <th>보고서</th> </tr>
                         </thead>
                         <tbody id="pivot-body"></tbody>
                     </table>
@@ -330,10 +350,7 @@
         </div>
     </div>
 
-    <script>
-        const DATA_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKVil4NdXVPimQjQEFhUXouiQQkACZuXyjZRNimI5gwCDjPwTMLNf7QurylXwT8nZK/exec";
-        const AUTH_URL = "https://script.google.com/macros/s/AKfycbwadQZXfGpQHMcMFRYp30-HuaTjkVsQ1goxnuaSXj-MgGzktUz0eoIhK7815T-y8mQF/exec"; 
-        
+    <script> 
         let chartInstances = {};
         let allRecords = []; 
         let userCenter = "";
@@ -364,31 +381,37 @@
         async function authenticate() {
             const name = document.getElementById('loginName').value;
             const phone = document.getElementById('loginPhone').value;
-            
-            if(!name || !phone) {
+
+            if (!name || !phone) {
                 alert("이름과 전화번호를 모두 입력해주세요.");
                 return;
             }
-            
-            const url = `${AUTH_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
-        
+
             try {
-                const response = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
-                const res = await response.json();
-                if (res.status === "SUCCESS") {
-                    alert("로그인 성공! (" + res.center + " 소속)");
-                    userCenter = res.center;
-                    localStorage.setItem("userCenter", res.center);
+                // 스크린샷에 맞춰 필드명을 name, phone으로 수정
+                const snapshot = await db.collection("UserDB")
+                    .where("name", "==", name)
+                    .where("phone", "==", phone)
+                    .get();
+
+                if (!snapshot.empty) {
+                    const userData = snapshot.docs[0].data();
                     
-                    document.getElementById('dashboard-title').innerText = `[${res.center}] 시설물 점검 실시간 모니터링 현황판`;
+                    // center 필드 값을 가져와서 대시보드 타이틀 등에 활용
+                    alert("로그인 성공! (" + userData.center + " 소속)");
+                    
+                    localStorage.setItem("userCenter", userData.center);
+                    
+                    document.getElementById('dashboard-title').innerText = `[${userData.center}] 시설물 점검 실시간 모니터링 현황판`;
                     document.getElementById('login-overlay').style.display = 'none';
-                    loadDashboardData(); 
+                    
+                    loadDashboardData();
                 } else {
-                    alert("로그인 실패: 정보가 일치하지 않습니다.");
+                    alert("인증 실패: 등록되지 않은 사용자이거나 정보가 일치하지 않습니다.");
                 }
             } catch (error) {
-                console.error("로그인 통신 오류:", error); 
-                alert("로그인 서버 통신 오류가 발생했습니다.");
+                console.error("인증 처리 중 오류:", error);
+                alert("서버 연결에 문제가 발생했습니다.");
             }
         }
 
@@ -399,70 +422,57 @@
             }
         }
 
-        function loadDashboardData() {
-            const loginOverlay = document.getElementById('login-overlay');
-            const indicator = document.getElementById('loading-indicator');
-            const globalLoader = document.getElementById('global-loader');
+        // 전역 변수로 리스너를 관리하여 나중에 중복 실행 방지
+        let unsubscribe = null;
+        let debounceTimer = null;
 
-            if (loginOverlay && loginOverlay.style.display !== 'none') {
-                if (indicator) { indicator.style.display = "none"; }
-                if (globalLoader) { globalLoader.style.display = 'none'; }
-                return;
-            } else {
-                if (indicator) { indicator.style.display = "block"; }
-                if (globalLoader) { globalLoader.style.display = 'flex'; }
-            }
-            
-            fetch(DATA_WEB_APP_URL, { mode: 'cors', cache: 'no-store' })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === "success" || res.status === "SUCCESS") {
-                    const dataRecords = res.records || res.data || [];
-                    
-                    allRecords = dataRecords.map(r => ({
-                        date: r.date || r["날짜"] || "",
-                        inspector: r.inspector || r["점검자"] || r["작업자"] || "미지정",
-                        fid: r.fid || r["설비ID"] || r["설비id"] || "알수없음" 
-                    }));
-                    
-                    setFilterOptions(allRecords);
-                    applyFilters(); 
-                    if(res.lastUpdate) { lastKnownTime = res.lastUpdate; }
-                } else {
-                    alert("데이터 로드 실패: " + (res.message || "알 수 없는 오류"));
-                }
-            })
-            .catch(err => {
-                console.error("데이터 연동 오류:", err);
-            })
-            .finally(() => {
-                const indicatorClose = document.getElementById('loading-indicator');
-                const globalLoaderClose = document.getElementById('global-loader');
-                if (indicatorClose) { indicatorClose.style.display = "none"; }
-                if (globalLoaderClose) { globalLoaderClose.style.display = 'none'; }
-            });
-        }
+        async function loadDashboardData() {
+            const userCenter = localStorage.getItem("userCenter");
+            console.log("현재 모니터링 센터:", userCenter);
 
-        async function syncDashboard() {
-            const loginOverlay = document.getElementById('login-overlay');
-            if (loginOverlay && loginOverlay.style.display !== 'none') return;
-            
+            // 로딩 표시
+            document.getElementById('global-loader').style.display = 'flex';
+
             try {
-                const res = await fetch(DATA_WEB_APP_URL + "?t=" + Date.now(), { cache: 'no-store' });
-                const json = await res.json();
+                // 1. 점검 기록 데이터 가져오기
+                const logsSnap = await db.collection("inspection_logs")
+                                        .where("centerName", "==", userCenter)
+                                        .get();
                 
-                if (json.status === "success") {
-                    if (!lastKnownTime || json.lastUpdate !== lastKnownTime) {
-                        lastKnownTime = json.lastUpdate;
-                        loadDashboardData(); 
-                    }
-                }
-            } catch (err) {
-                console.error("자동 동기화 체크 중 오류 발생:", err);
+                // 2. PDF 정보 데이터 가져오기
+                const pdfSnap = await db.collection("MaxerveUlsan_PDF").get();
+
+                // 3. PDF 데이터를 쉽게 찾기 위해 매핑 (FID를 키로)
+                const pdfMap = {};
+                pdfSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.fid) pdfMap[data.fid] = data.pdfUrl;
+                });
+
+                // 4. 데이터 합치기
+                const tempRecords = [];
+                logsSnap.forEach((doc) => {
+                    const data = doc.data();
+                    tempRecords.push({
+                        date: data.datetime ? data.datetime.substring(0, 10) : "",
+                        inspector: data.worker || "미지정",
+                        fid: data.facilityId || "알수없음",
+                        pdfUrl: pdfMap[data.facilityId] || "" // 여기서 PDF URL을 매칭!
+                    });
+                });
+
+                allRecords = tempRecords;
+                console.log("통합 데이터 로드 완료:", allRecords);
+                
+                setFilterOptions(allRecords);
+                applyFilters();
+
+            } catch (error) {
+                console.error("데이터 로드 중 오류 발생:", error);
+            } finally {
+                document.getElementById('global-loader').style.display = 'none';
             }
         }
-        
-        setInterval(syncDashboard, 60000);
         
         function setFilterOptions(records) {
             if (!records || records.length === 0) return;
@@ -653,20 +663,37 @@
                 "소방_01": "1F_1구역_소화기", "소방_02": "1F_2구역_가스계 소화기",
                 "소방_05": "1F_1구역_옥내소화전", "소방_06": "1F_2구역_옥외소화전",
                 "소방_07": "3F_A구역_방화셔터", "소방_08": "3F_B구역_스프リング클러", "소방_10": "3F_C구역_화재감지기",
-                "순찰_01": "외곽 선로", "순찰_02": "옥상 공조실 주행"
+                "순찰_01": "외곽 선로", "순찰_02": "옥상 공조실 주행",
+                "기계_01": "OHD1F_1A01", "기계_02": "OHD1F_1A02", "기계_03": "OHD1F_1A03", "기계_04": "OHD1F_1A04", "기계_05": "OHD1F_1A05", "기계_06": "OHD1F_1A06", "기계_07": "OHD1F_1A07", "기계_08": "OHD1F_1A08",
+                "기계_09": "OHD3F_3A01", "기계_10": "OHD3F_3A02", "기계_11": "OHD3F_3A03", "기계_12": "OHD3F_3A04", "기계_13": "OHD3F_3A05", "기계_14": "OHD3F_3A06", "기계_15": "OHD3F_3A07", "기계_16": "OHD3F_3A08",
+                "기계_17": "OHD3F_3A09", "기계_18": "OHD3F_3A10", "기계_19": "도크레벨러1F_1_1A02", "기계_20": "도크레벨러1F_2_1A03", "기계_21": "도크레벨러1F_3_1A04", "기계_22": "도크레벨러1F_4_1A05", "기계_23": "도크레벨러1F_5_1A06", "기계_24": "도크레벨러1F_6_1A07",
+                "기계_25": "도크레벨러3F_7_3A02", "기계_26": "도크레벨러3F_8_3A03", "기계_27": "도크레벨러3F_9_3A04", "기계_28": "도크레벨러3F_10_3A05", "기계_29": "도크레벨러3F_11_3A06", "기계_30": "도크레벨러3F_12_3A07", "기계_31": "도크레벨러3F_13_3A08", "기계_32": "도크레벨러3F_14_3A09",
+                "기계_33": "도크레벨러3F_15_3A10", "기계_34": "도크레벨러3F_16_3A11", "기계_35": "승강기_1호", "기계_36": "승강기_2호", "기계_37": "승강기_3호", "기계_38": "승강기_1호(기계실)", "기계_39": "승강기_2호(기계실)", "기계_40": "승강기_3호(기계실)", 
+                "기계_41": "집수정펌프_기계실2EA", "기계_42": "집수정펌프_2Core_PIT_2EA", "기계_43": "집수정펌프_3Core_PIT_2EA", "기계_44": "집수정펌프_전기실_DA_2EA", "기계_45": "집수정펌프_1Core_ELEV_PIT_1EA", "기계_46": "집수정펌프_2Core_PIT_오배수_1SET", "기계_47": "집수정펌프_3Core_PIT_오배수_1SET", "기계_48": "부스터펌프_상수공급펌프",
+                "기계_49": "부스터펌프_저수조공급펌프", "기계_50": "오수정화설비_2Core_PIT", "기계_51": "오수정화설비_3Core_PIT", "기계_52": "저수조설비_기계실",
             };
-
-            fids.forEach(fid => {
+                fids.forEach(fid => {
                 let totalCount = records.filter(r => r.fid === fid).length;
+                
+                // 해당 설비의 가장 최근 점검 데이터에서 URL을 찾아옵니다.
+                let lastRecord = records.find(r => r.fid === fid && r.pdfUrl && r.pdfUrl !== "");
+                let pdfIcon = lastRecord ? 
+                    `<a href="${lastRecord.pdfUrl}" target="_blank" style="color:#ef4444; font-size:18px;" title="PDF 열기">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </a>` : 
+                    `<span style="color:#cbd5e1;">-</span>`;
+                
                 const locationText = fidLocations[fid] ? ` (${fidLocations[fid]})` : "";
+                
                 tableHtml += `<tr>
                     <td style="font-weight:bold; color:#1e293b; text-align:left; padding-left:20px;">
                         ${fid}<span style="color:#64748b; font-weight:normal;">${locationText}</span>
                     </td>
                     <td style="font-weight:bold; color:#3b82f6; text-align:center;">${totalCount} 건</td>
+                    <td style="text-align:center;">${pdfIcon}</td>
                 </tr>`;
             });
-            pivotBody.innerHTML = tableHtml || `<tr><td colspan="2" style="color:#94a3b8; padding:40px; text-align:center;">일치하는 점검 데이터가 없습니다.</td></tr>`;
+            pivotBody.innerHTML = tableHtml || `<tr><td colspan="3" style="color:#94a3b8; padding:40px; text-align:center;">데이터가 없습니다.</td></tr>`;
 
             // 4번 뷰
             let inspectorDataList = inspectors.map((ins, idx) => {
