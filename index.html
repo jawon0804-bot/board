@@ -428,49 +428,76 @@
 
         async function loadDashboardData() {
             const userCenter = localStorage.getItem("userCenter");
-            console.log("현재 모니터링 센터:", userCenter);
-
-            // 로딩 표시
-            document.getElementById('global-loader').style.display = 'flex';
+            const loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'flex';
 
             try {
-                // 1. 점검 기록 데이터 가져오기
                 const logsSnap = await db.collection("inspection_logs")
                                         .where("centerName", "==", userCenter)
                                         .get();
                 
-                // 2. PDF 정보 데이터 가져오기
-                const pdfSnap = await db.collection("MaxerveUlsan_PDF").get();
+                const excelSnap = await db.collection("MaxerveUlsan_Excel").get();
 
-                // 3. PDF 데이터를 쉽게 찾기 위해 매핑 (FID를 키로)
-                const pdfMap = {};
-                pdfSnap.forEach(doc => {
+                // [중요] 전역 변수 초기화
+                excelMap = {};
+
+                // 엑셀 DB에서 링크 매핑 정보 생성 (무조건 다 쪼갬)
+                excelSnap.forEach(doc => {
                     const data = doc.data();
-                    if (data.fid) pdfMap[data.fid] = data.pdfUrl;
+                    if (!data.facilityId || !data.file_url) return;
+
+                    // 1. facilityId를 리스트로 만듭니다.
+                    let fidList = [];
+                    if (Array.isArray(data.facilityId)) {
+                        fidList = data.facilityId;
+                    } else if (typeof data.facilityId === 'string') {
+                        fidList = data.facilityId.split(',').map(s => s.trim());
+                    } else {
+                        fidList = [String(data.facilityId)];
+                    }
+
+                    // 2. 리스트를 정렬합니다 (기계_01, 기계_02... 순서)
+                    fidList.sort((a, b) => a.localeCompare(b));
+
+                    // 3. [핵심] 첫 번째(가장 번호가 낮은) 설비에만 링크를 맵핑합니다!
+                    if (fidList.length > 0) {
+                        excelMap[fidList[0]] = data.file_url;
+                    }
                 });
 
-                // 4. 데이터 합치기
+                // [데이터 처리부]
                 const tempRecords = [];
                 logsSnap.forEach((doc) => {
                     const data = doc.data();
-                    tempRecords.push({
-                        date: data.datetime ? data.datetime.substring(0, 10) : "",
-                        inspector: data.worker || "미지정",
-                        fid: data.facilityId || "알수없음",
-                        pdfUrl: pdfMap[data.facilityId] || "" // 여기서 PDF URL을 매칭!
+                    // fids 배열을 뽑아냅니다.
+                    let fids = Array.isArray(data.facilityId) ? data.facilityId : [data.facilityId || "알수없음"];
+
+                    // ★ 핵심: 이 점검표에 링크가 있는지 딱 한 번만 확인합니다.
+                    // 점검표(데이터 하나) 내의 첫 번째 설비 ID에 해당하는 링크를 가져옵니다.
+                    let firstFid = fids[0] ? String(fids[0]).trim() : "";
+                    let linkForThisRecord = excelMap[firstFid] || "";
+
+                    fids.forEach((fid, index) => {
+                        let cleanFid = fid ? String(fid).trim() : "알수없음";
+                        
+                        tempRecords.push({
+                            date: data.datetime ? data.datetime.substring(0, 10) : "",
+                            inspector: data.worker || "미지정",
+                            fid: cleanFid,
+                            // ★ 핵심: 무조건 0번(첫 번째) 설비에만 링크를 박고, 
+                            // 나머지는 억지로라도 빈 문자열("")을 넣어서 데이터를 분리합니다.
+                            file_url: (index === 0) ? linkForThisRecord : ""
+                        });
                     });
                 });
 
                 allRecords = tempRecords;
-                console.log("통합 데이터 로드 완료:", allRecords);
-                
                 setFilterOptions(allRecords);
                 applyFilters();
-
             } catch (error) {
-                console.error("데이터 로드 중 오류 발생:", error);
+                console.error("데이터 로드 오류:", error);
             } finally {
-                document.getElementById('global-loader').style.display = 'none';
+                if (loader) loader.style.display = 'none';
             }
         }
         
@@ -672,28 +699,32 @@
                 "기계_41": "집수정펌프_기계실2EA", "기계_42": "집수정펌프_2Core_PIT_2EA", "기계_43": "집수정펌프_3Core_PIT_2EA", "기계_44": "집수정펌프_전기실_DA_2EA", "기계_45": "집수정펌프_1Core_ELEV_PIT_1EA", "기계_46": "집수정펌프_2Core_PIT_오배수_1SET", "기계_47": "집수정펌프_3Core_PIT_오배수_1SET", "기계_48": "부스터펌프_상수공급펌프",
                 "기계_49": "부스터펌프_저수조공급펌프", "기계_50": "오수정화설비_2Core_PIT", "기계_51": "오수정화설비_3Core_PIT", "기계_52": "저수조설비_기계실",
             };
+                // fids.forEach 루프 내부를 이렇게 바꾸세요
                 fids.forEach(fid => {
-                let totalCount = records.filter(r => r.fid === fid).length;
-                
-                // 해당 설비의 가장 최근 점검 데이터에서 URL을 찾아옵니다.
-                let lastRecord = records.find(r => r.fid === fid && r.pdfUrl && r.pdfUrl !== "");
-                let pdfIcon = lastRecord ? 
-                    `<a href="${lastRecord.pdfUrl}" target="_blank" style="color:#ef4444; font-size:18px;" title="PDF 열기">
-                        <i class="fa-solid fa-file-pdf"></i>
-                    </a>` : 
-                    `<span style="color:#cbd5e1;">-</span>`;
-                
-                const locationText = fidLocations[fid] ? ` (${fidLocations[fid]})` : "";
-                
-                tableHtml += `<tr>
-                    <td style="font-weight:bold; color:#1e293b; text-align:left; padding-left:20px;">
-                        ${fid}<span style="color:#64748b; font-weight:normal;">${locationText}</span>
-                    </td>
-                    <td style="font-weight:bold; color:#3b82f6; text-align:center;">${totalCount} 건</td>
-                    <td style="text-align:center;">${pdfIcon}</td>
-                </tr>`;
-            });
-            pivotBody.innerHTML = tableHtml || `<tr><td colspan="3" style="color:#94a3b8; padding:40px; text-align:center;">데이터가 없습니다.</td></tr>`;
+                    let totalCount = records.filter(r => r.fid === fid).length;
+                    
+                    // excelMap[fid]는 loadDashboardData에서 엑셀 DB와 1:1로 매핑해둔 것입니다.
+                    // 여기서 직접 가져와야만 다른 설비와 링크가 섞이지 않습니다.
+                    let finalUrl = (typeof excelMap !== 'undefined' && excelMap[fid]) ? excelMap[fid] : "";
+                    
+                    // finalUrl이 있는 경우에만 아이콘 출력
+                    let excelIcon = (finalUrl !== "") ? 
+                        `<a href="${finalUrl}" target="_blank" style="color:#217346; font-size:18px;" title="엑셀 보고서 열기">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </a>` : 
+                        `<span style="color:#cbd5e1;">-</span>`;
+                    
+                    const locationText = fidLocations[fid] ? ` (${fidLocations[fid]})` : "";
+                    
+                    tableHtml += `<tr>
+                        <td style="font-weight:bold; color:#1e293b; text-align:left; padding-left:20px;">
+                            ${fid}<span style="color:#64748b; font-weight:normal;">${locationText}</span>
+                        </td>
+                        <td style="font-weight:bold; color:#3b82f6; text-align:center;">${totalCount} 건</td>
+                        <td style="text-align:center;">${excelIcon}</td>
+                    </tr>`;
+                });
+                pivotBody.innerHTML = tableHtml || `<tr><td colspan="3" style="color:#94a3b8; padding:40px; text-align:center;">데이터가 없습니다.</td></tr>`;
 
             // 4번 뷰
             let inspectorDataList = inspectors.map((ins, idx) => {
